@@ -50,22 +50,22 @@ internal static class VoteButtonHandler
             {
                 Console.WriteLine("preparing message to POST");
                 string url = "https://nordevcommentsbackend.fly.dev/api/messages/addvotetomessage";
-                string parameters = $"?messageLink={Uri.EscapeDataString(messageLink.Trim())}&username={Uri.EscapeDataString(component.User.Username)}&votedYes={votedYes}";
+                //string parameters = $"?messageLink={Uri.EscapeDataString(messageLink.Trim())}&username={Uri.EscapeDataString(component.User.Username)}&votedYes={votedYes}";
                 
                 //var content = new StringContent(
                 //    parameters, Encoding.UTF8, "application/json");
 
                 var formData = new List<KeyValuePair<string, string>>
                     {
-                        new KeyValuePair<string, string>("messageLink", Uri.EscapeDataString(messageLink.Trim())),
-                        new KeyValuePair<string, string>("username", Uri.EscapeDataString(component.User.Username)),
+                        new KeyValuePair<string, string>("messageLink", messageLink.Trim()),
+                        new KeyValuePair<string, string>("username", component.User.Username),
                         new KeyValuePair<string, string>("votedYes", votedYes.ToString())
                     };
 
                 var content = new FormUrlEncodedContent(formData);
 
                 Console.WriteLine("sending addvotetomessage POST");
-                Console.WriteLine($"Request: {url}{parameters}");
+                Console.WriteLine($"Request: {url}{formData}");
                 var response = await httpClient.PostAsync(url, content);
 
                 if (response.IsSuccessStatusCode)
@@ -83,7 +83,7 @@ internal static class VoteButtonHandler
                 else
                 {
                     Console.WriteLine($"something went wrong Request message: {response.RequestMessage}, headers: {response.Content.Headers}");
-                    await component.FollowupAsync(text: $"Opps something isn't working correctly! {response.StatusCode} - {response.ReasonPhrase} - {response.Content}");
+                    await component.FollowupAsync(text: $"Opps something isn't working correctly! {response.StatusCode} - {response.ReasonPhrase} - {response.Content.Headers}");
                     return false;
                 }
 
