@@ -49,24 +49,15 @@ internal static class VoteButtonHandler
             try
             {
                 Console.WriteLine("preparing message to POST");
+
                 string url = "https://nordevcommentsbackend.fly.dev/api/messages/addvotetomessage";
-                //string parameters = $"?messageLink={Uri.EscapeDataString(messageLink.Trim())}&username={Uri.EscapeDataString(component.User.Username)}&votedYes={votedYes}";
-                
-                //var content = new StringContent(
-                //    parameters, Encoding.UTF8, "application/json");
+                string parameters = $"?messageLink={Uri.EscapeDataString(messageLink.Trim())}&username={Uri.EscapeDataString(component.User.Username)}&votedYes={votedYes}";
 
-                var formData = new List<KeyValuePair<string, string>>
-                    {
-                        new KeyValuePair<string, string>("messageLink", messageLink.Trim()),
-                        new KeyValuePair<string, string>("username", component.User.Username),
-                        new KeyValuePair<string, string>("votedYes", votedYes.ToString())
-                    };
 
-                var content = new FormUrlEncodedContent(formData);
 
                 Console.WriteLine("sending addvotetomessage POST");
-                Console.WriteLine($"Request: {url}{formData}");
-                var response = await httpClient.PostAsync(url, content);
+                Console.WriteLine($"Request: {url}{parameters}");
+                var response = await httpClient.PostAsync(url + parameters, null);
 
                 if (response.IsSuccessStatusCode)
                 {
