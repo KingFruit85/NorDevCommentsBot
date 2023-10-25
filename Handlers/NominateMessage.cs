@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using NorDevBestOfBot.Models;
-using System.Net.Mail;
 
 namespace NorDevBestOfBot.Handlers;
 
@@ -32,6 +31,7 @@ internal class NominateMessage
         string refMessageLink = string.Empty;
         IUserMessage? refrencedMessage = null;
 
+        // Have to cast here to get the ReferencedMessage
         if (message is IUserMessage userMessage)
         {
             Console.WriteLine("Message is IUserMessage");
@@ -67,7 +67,7 @@ internal class NominateMessage
         // Create a list of embeds that we will include with the response
         List<Embed> embeds = new ();
         
-        // Check if the message refrences another message
+        // Check if the message refrences another message, if it does we'll want to post that first
         if (refrencedMessage is not null)
         {
             Console.WriteLine($"found {refrencedMessage.Attachments.Count} ref message attachments");
@@ -83,6 +83,8 @@ internal class NominateMessage
                 }
             }
 
+            // If a message has one image attachment it gets added as an embed, if there are multiple they 
+            // all get added as attachments, should probably refactor this away to a helper method
             Console.WriteLine($"found {refrencedMessage.Embeds.Count} ref message embeds");
             foreach (var embed in refrencedMessage.Embeds)
             {
@@ -133,7 +135,6 @@ internal class NominateMessage
 
         // Create nominated message embed
         Console.WriteLine($"Creating main embed for nominated message");
-
         var nominatedMessageEmbed = new EmbedBuilder()
             .WithAuthor(command.Data.Message.Author)
             .WithDescription(command.Data.Message.Content)
@@ -143,10 +144,9 @@ internal class NominateMessage
         embeds.Add(nominatedMessageEmbed);
 
         // Post to original channel
-        var willCheck = command.User.Id == 136293146647724032 ? "The ACTUAL poo-poo head " : "";
+        var willCheck = command.User.Id == 136293146647724032 ? "The ACTUAL poo-poo head " : ""; // lol 💩
         Console.WriteLine("Posting message to channel message was nominated in");
 
-        Console.WriteLine($"There are a total of {embeds.Count} embeds to post");
         await command.FollowupAsync(
                 text: $"**{willCheck}{command.User.Mention}** has nominated **{command.Data.Message.Author.Mention}'s** message to be added to the best of list",
                 components: voteButtons.Build(),
@@ -157,7 +157,7 @@ internal class NominateMessage
 
         // Post to the general channel if the nominated message didn't orginate in the general channel
         var generalChannel = client.GetChannel(GeneralChannelId) as ITextChannel;
-        bool sendToGeneralChannel = false;
+        bool sendToGeneralChannel = true; // testing toggle, set to false to stop spamming lobby while testing in bottesting
 
         if (generalChannel is not null && command.Channel.Id != generalChannel.Id && sendToGeneralChannel)
             {

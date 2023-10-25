@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using NorDevBestOfBot.Models;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
@@ -52,8 +51,6 @@ internal static class VoteButtonHandler
 
                 string url = "https://nordevcommentsbackend.fly.dev/api/messages/addvotetomessage";
                 string parameters = $"?messageLink={Uri.EscapeDataString(messageLink.Trim())}&username={Uri.EscapeDataString(component.User.Username)}&votedYes={votedYes}";
-
-
 
                 Console.WriteLine("sending addvotetomessage POST");
                 Console.WriteLine($"Request: {url}{parameters}");
