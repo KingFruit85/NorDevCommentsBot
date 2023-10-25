@@ -47,6 +47,7 @@ internal static class VoteButtonHandler
 
             try
             {
+                Console.WriteLine("preparing message to POST");
                 string url = "https://nordevcommentsbackend.fly.dev/api/messages/addvotetomessage";
                 string parameters = $"?messageLink={Uri.EscapeDataString(messageLink.Trim())}&username={Uri.EscapeDataString(component.User.Username)}&votedYes={votedYes}";
                 var content = new StringContent(
