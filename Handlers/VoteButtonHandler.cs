@@ -48,11 +48,12 @@ internal static class VoteButtonHandler
             try
             {
                 string url = "https://nordevcommentsbackend.fly.dev/api/messages/addvotetomessage";
+                string parameters = $"?messageLink={Uri.EscapeDataString(messageLink.Trim())}&username={Uri.EscapeDataString(component.User.Username)}&votedYes={votedYes}";
                 var content = new StringContent(
-                    $"?messageLink={messageLink.Trim()}&username={component.User.Username}&votedYes={votedYes}", Encoding.UTF8, "application/json");
+                    parameters, Encoding.UTF8, "application/x-www-form-urlencoded");
                 
                 Console.WriteLine("sending addvotetomessage POST");
-                Console.WriteLine($"Request: {messageLink.Trim()}&username={message.Author.Username}&votedYes={votedYes}");
+                Console.WriteLine($"Request: {url}{parameters}");
                 var response = await httpClient.PostAsync(url, content);
 
                 if (response.IsSuccessStatusCode)
@@ -69,6 +70,7 @@ internal static class VoteButtonHandler
                 }
                 else
                 {
+                    Console.WriteLine($"something went wrong Request message: {response.RequestMessage}, headers: {response.Content.Headers}");
                     await component.FollowupAsync(text: $"Opps something isn't working correctly! {response.StatusCode} - {response.ReasonPhrase} - {response.Content}");
                     return false;
                 }
@@ -100,17 +102,23 @@ internal static class VoteButtonHandler
             quotedMessageAvatarLink = "",
             quotedMessageImage = "",
             nickname = component.User.Username,
-            quotedMessageAuthorNickname = ""
+            quotedMessageAuthorNickname = "",
+            quotedMessageMessageLink = ""
         };
 
         // Check for attachments, add the urls to the comment
         var attachmentUrls = new List<string>();
 
-        if (message.Attachments.Count > 0)
+        if (message.Attachments.Count > 0 || message.Embeds.Count > 0)
         {
             foreach (var attachment in message.Attachments)
             {
                 attachmentUrls.Add(attachment.Url);
+            }
+
+            foreach (var embed in message.Embeds)
+            {
+                attachmentUrls.Add(embed.Url);
             }
 
             if (attachmentUrls.Any())
@@ -131,14 +139,20 @@ internal static class VoteButtonHandler
                 comment.quotedMessageAuthor = refrencedMessage.Author.Username;
                 comment.quotedMessageAvatarLink = refrencedMessage.Author.GetAvatarUrl();
                 comment.quotedMessageAuthorNickname = "";
+                comment.quotedMessageMessageLink = refrencedMessage.GetJumpUrl().Trim();
 
                 var quotedMessageAttachmentUrls = new List<string>();
 
-                if (refrencedMessage.Attachments.Count > 0)
+                if (refrencedMessage.Attachments.Count > 0 || refrencedMessage.Embeds.Count > 0)
                 {
                     foreach (var attachment in refrencedMessage.Attachments)
                     {
                         quotedMessageAttachmentUrls.Add(attachment.Url);
+                    }
+
+                    foreach (var embed in refrencedMessage.Embeds)
+                    {
+                        quotedMessageAttachmentUrls.Add(embed.Url);
                     }
 
                     if (quotedMessageAttachmentUrls.Any())
@@ -154,12 +168,12 @@ internal static class VoteButtonHandler
         try
         {
             var content = new StringContent(data, Encoding.UTF8, "application/json");
-            Console.WriteLine("creating new record");
+            Console.WriteLine($"creating new record with following content {data}");
             var response = await httpClient.PostAsync(apiUrl, content);
+            Console.WriteLine($"Response: {response}");
 
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"");
                 await component.FollowupAsync
                     (
                         text: $"Thanks for voting!, {message.Author.Username}'s comment now has {voteCount} vote!", null, false, ephemeral: true, null, null, null, null
@@ -169,14 +183,14 @@ internal static class VoteButtonHandler
             else
             {
                 Console.WriteLine($"POST request failed with status code: {response.StatusCode}");
-                await component.FollowupAsync(text: $"Something unexpected happened!");
+                await component.FollowupAsync(text: $"Something unexpected happened!, Chris isn't very good at this is he?");
                 return false;
             }
         }
         catch (Exception ex )
         {
             Console.WriteLine(ex.Message);
-            await component.FollowupAsync(text: $"Something unexpected happened!");
+            await component.FollowupAsync(text: $"Something unexpected happened!, Chris isn't very good at this is he?");
         }
         return true;
     }

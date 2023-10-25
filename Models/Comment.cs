@@ -20,4 +20,5 @@ public class Comment
     public string? quotedMessageImage { get; set; }
     public string? nickname { get; set; }
     public string? quotedMessageAuthorNickname { get; set; }
+    public string? quotedMessageMessageLink {  get; set; }
 }

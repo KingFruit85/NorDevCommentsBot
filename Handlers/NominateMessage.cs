@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using NorDevBestOfBot.Models;
+using System.Net.Mail;
 
 namespace NorDevBestOfBot.Handlers;
 
@@ -18,7 +19,7 @@ internal class NominateMessage
         }
 
         Console.WriteLine("Checking if user nominated own message");
-        if (command.User.Id == command.Data.Message.Author.Id)
+        if (command.User.Id == command.Data.Message.Author.Id && command.User.Id != 317070992339894273)
         {
             var interactionUser = guild!.GetUser(command.User.Id);
             await command.FollowupAsync(text: Helpers.UserNominatingOwnComment(interactionUser), ephemeral: false);
@@ -28,8 +29,7 @@ internal class NominateMessage
         var server = client.GetGuild(command.GuildId!.Value);
         var channel = server.GetTextChannel(command.ChannelId!.Value);
         var message = await channel.GetMessageAsync(command.Data.Message.Id);
-
-        string messageLink = string.Empty;
+        string refMessageLink = string.Empty;
         IUserMessage? refrencedMessage = null;
 
         if (message is IUserMessage userMessage)
@@ -38,9 +38,10 @@ internal class NominateMessage
             if (userMessage.ReferencedMessage is not null)
             {
                 refrencedMessage = userMessage.ReferencedMessage;
+                refMessageLink = refrencedMessage.GetJumpUrl().Trim();
             }
         }
-        messageLink = message.GetJumpUrl().Trim();
+        string messageLink = message.GetJumpUrl().Trim();
 
         Comment? MessageAlreadyPersisted = await Helpers.CheckIfMessageAlreadyPersistedAsync(messageLink, httpClient);
 
@@ -49,28 +50,6 @@ internal class NominateMessage
             await command.FollowupAsync(text: $"This message has already been added to the best of list", ephemeral: true);
             return;
         }
-
-        string authorName;
-        if (command.Data.Message.Author is IGuildUser user)
-        {
-            Console.WriteLine("Author is IGuildUser, attempting to get the nickname");
-            authorName = user.DisplayName;
-        }
-        else
-        {
-            Console.WriteLine("Author is NOT IGuildUser, just using the username");
-            authorName = command.Data.Message.Author.Username;
-        }
-
-        Console.WriteLine($"Creating main embed for nominated message");
-        var embed = new EmbedBuilder()
-            .WithUrl(messageLink)
-            .WithAuthor(name: authorName, iconUrl: command.Data.Message.Author.GetAvatarUrl())
-            .WithTimestamp(command.Data.Message.Timestamp)
-            .WithDescription(description: command.Data.Message.Content)
-            .WithColor(color: new Color(76, 175, 80))
-            .Build();
-
 
         var voteButtons = new ComponentBuilder()
             .WithButton(
@@ -85,44 +64,100 @@ internal class NominateMessage
                 style: ButtonStyle.Danger,
                 row: 0);
 
-        // Post to original channel
-        var willCheck = command.User.Id == 136293146647724032 ? "The ACTUAL poo-poo head " : "";
-        Console.WriteLine("Posting message to channel message was nominated in");
-
+        // Create a list of embeds that we will include with the response
         List<Embed> embeds = new ();
-
-        // Create nominated message embed
-
-        var nominatedMessageEmbed = new EmbedBuilder()
-            .WithAuthor(command.Data.Message.Author)
-            .WithDescription(command.Data.Message.Content)
-            .Build();
-
-        embeds.Add(nominatedMessageEmbed);
-
+        
+        // Check if the message refrences another message
         if (refrencedMessage is not null)
         {
+            Console.WriteLine($"found {refrencedMessage.Attachments.Count} ref message attachments");
+            foreach (var attachment in refrencedMessage.Attachments)
+            {
+                if (attachment.Width.HasValue && attachment.Height.HasValue)
+                {
+                    embeds.Add(
+                        new EmbedBuilder()
+                            .WithUrl(refMessageLink)
+                            .WithImageUrl(attachment.Url)
+                            .Build());
+                }
+            }
+
+            Console.WriteLine($"found {refrencedMessage.Embeds.Count} ref message embeds");
+            foreach (var embed in refrencedMessage.Embeds)
+            {
+                if (embed.Image.HasValue)
+                {
+                    embeds.Add(
+                        new EmbedBuilder()
+                            .WithUrl(refMessageLink)
+                            .WithImageUrl(embed.Url)
+                            .Build());
+                }
+            }
+
             var refrencedMessageEmbed = new EmbedBuilder()
             .WithAuthor(refrencedMessage.Author)
             .WithDescription(refrencedMessage.Content)
+            .WithUrl(refMessageLink)
             .Build();
 
             embeds.Add(refrencedMessageEmbed);
         }
 
+        Console.WriteLine($"found {message.Attachments.Count}  message attachments");
+        foreach (var attachment in message.Attachments)
+        {
+            if (attachment.Width.HasValue && attachment.Height.HasValue)
+            {
+                embeds.Add(
+                    new EmbedBuilder()
+                        .WithUrl(messageLink)
+                        .WithImageUrl(attachment.Url)
+                        .Build());
+            }
+        }
+
+        Console.WriteLine($"found {message.Embeds.Count} message embeds");
+        foreach (var embed in message.Embeds)
+        {
+            if (embed.Image.HasValue)
+            {
+                embeds.Add(
+                    new EmbedBuilder()
+                        .WithUrl(messageLink)
+                        .WithImageUrl(embed.Url)
+                        .Build());
+            }
+        }
+
+        // Create nominated message embed
+        Console.WriteLine($"Creating main embed for nominated message");
+
+        var nominatedMessageEmbed = new EmbedBuilder()
+            .WithAuthor(command.Data.Message.Author)
+            .WithDescription(command.Data.Message.Content)
+            .WithUrl (messageLink)
+            .Build();
+
+        embeds.Add(nominatedMessageEmbed);
+
+        // Post to original channel
+        var willCheck = command.User.Id == 136293146647724032 ? "The ACTUAL poo-poo head " : "";
+        Console.WriteLine("Posting message to channel message was nominated in");
+
+        Console.WriteLine($"There are a total of {embeds.Count} embeds to post");
         await command.FollowupAsync(
                 text: $"**{willCheck}{command.User.Mention}** has nominated **{command.Data.Message.Author.Mention}'s** message to be added to the best of list",
                 components: voteButtons.Build(),
                 embeds: embeds.ToArray()
             );
 
-
         ulong GeneralChannelId = ulong.Parse(Environment.GetEnvironmentVariable("GeneralChannelId")!);
 
         // Post to the general channel if the nominated message didn't orginate in the general channel
         var generalChannel = client.GetChannel(GeneralChannelId) as ITextChannel;
         bool sendToGeneralChannel = false;
-
 
         if (generalChannel is not null && command.Channel.Id != generalChannel.Id && sendToGeneralChannel)
             {
