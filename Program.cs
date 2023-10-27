@@ -83,9 +83,9 @@ public class Program : IDisposable
         .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
         
 
-        var getTopFive = new SlashCommandBuilder()
-        .WithName("get-top-five-comments")
-        .WithDescription("Gets the top five comments of all time from the server.")
+        var getTopTen = new SlashCommandBuilder()
+        .WithName("get-top-ten-comments")
+        .WithDescription("Gets the top ten comments of all time from the server.")
         .AddOption("isephemeral", ApplicationCommandOptionType.Boolean,"Keep this post hidden?", isRequired:false);
 
         var getThisMonthsComments = new SlashCommandBuilder()
@@ -116,7 +116,7 @@ public class Program : IDisposable
             await Guild.BulkOverwriteApplicationCommandAsync(new ApplicationCommandProperties[]
                 {
                     getRandom.Build(),
-                    getTopFive.Build(),
+                    getTopTen.Build(),
                     getThisMonthsComments.Build(),
                     getUsersTopFive.Build(),
                     getTopTenUsersByVoteCount.Build(),
@@ -140,8 +140,8 @@ public class Program : IDisposable
             case "get-random-comment":
                 await GetRandomComment.HandleGetRandomComment(command, HttpClient);
                 break;
-            case "get-top-five-comments":
-                await GetTopFiveComments.HandleGetTopFiveComments(command, HttpClient, DiscordClient!);
+            case "get-top-ten-comments":
+                await GetTopTenComments.HandleGetTopTenComments(command, HttpClient, DiscordClient!);
                 break;
             case "get-this-months-comments":
                 await GetThisMonthsComments.HandleGetThisMonthsComments(command, HttpClient, DiscordClient!);

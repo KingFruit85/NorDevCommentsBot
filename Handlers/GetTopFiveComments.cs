@@ -5,9 +5,9 @@ using System.Net.Http.Json;
 
 namespace NorDevBestOfBot.Handlers;
 
-public class GetTopFiveComments
+public class GetTopTenComments
 {
-    public static async Task HandleGetTopFiveComments(SocketSlashCommand command, HttpClient httpClient, DiscordSocketClient client)
+    public static async Task HandleGetTopTenComments(SocketSlashCommand command, HttpClient httpClient, DiscordSocketClient client)
     {
         var firstOption = command.Data.Options.FirstOrDefault();
         bool isEphemeral = firstOption == null || (bool)firstOption.Value;
@@ -47,7 +47,7 @@ public class GetTopFiveComments
 
         try
         {
-            var response = await httpClient.GetFromJsonAsync<List<Comment>>("https://nordevcommentsbackend.fly.dev/api/messages/gettopfivecomments");
+            var response = await httpClient.GetFromJsonAsync<List<Comment>>("https://nordevcommentsbackend.fly.dev/api/messages/gettoptencomments");
             if (response is not null)
             {
                 foreach (var comment in response)
