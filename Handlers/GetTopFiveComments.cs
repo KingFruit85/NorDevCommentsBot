@@ -31,7 +31,6 @@ public class GetTopFiveComments
         try
         {
             var response = await httpClient.GetFromJsonAsync<List<Comment>>("https://nordevcommentsbackend.fly.dev/api/messages/gettopfivecomments");
-
             if (response is not null)
             {
                 foreach (var comment in response)
@@ -75,7 +74,7 @@ public class GetTopFiveComments
                     var linkButton = new ComponentBuilder()
                         .WithButton(
                             label: "Take me to the post 📫",
-                            customId: $"yes - {comment.messageLink}",
+                            url: comment.messageLink,
                             style: ButtonStyle.Link,
                             row: 0);
 
