@@ -10,7 +10,8 @@ public class GetRandomComment
 {
     public static async Task HandleGetRandomComment(SocketSlashCommand command, HttpClient httpClient)
     {
-        bool isEphemeral = ((bool?)command.Data.Options.First().Value) ?? true;
+        var firstOption = command.Data.Options.FirstOrDefault();
+        bool isEphemeral = (firstOption != null) ? (bool)firstOption.Value : true;
 
         await command.DeferAsync(ephemeral: isEphemeral);
 
