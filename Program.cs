@@ -128,7 +128,7 @@ public class Program : IDisposable
                 await GetRandomComment.HandleGetRandomComment(command, HttpClient);
                 break;
             case "get-top-five-comments":
-                await GetTopFiveComments.HandleGetTopFiveComments(command, HttpClient);
+                await GetTopFiveComments.HandleGetTopFiveComments(command, HttpClient, DiscordClient!);
                 break;
             case "get-users-top-five-comments":
                 await GetUsersTopFiveComments.HandleGetUsersTopFiveComments(command, HttpClient);
