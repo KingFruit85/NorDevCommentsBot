@@ -150,10 +150,6 @@ public class GetThisMonthsComments
                         await channel!.SendMessageAsync(
                             components: linkButton.Build(),
                             embeds: embeds.ToArray());
-
-                        await command.FollowupAsync(
-                            text:"I hope you enjoyed reading though this month's comments as much as I did 🤗",
-                            ephemeral: true);
                     }
 
                     // post just to user
@@ -172,6 +168,10 @@ public class GetThisMonthsComments
                     }
 
                 }
+
+                await command.FollowupAsync(
+                            text: "I hope you enjoyed reading though this month's comments as much as I did 🤗",
+                            ephemeral: true);
             }
         }
         catch (Exception ex)
