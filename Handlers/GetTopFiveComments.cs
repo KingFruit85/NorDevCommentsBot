@@ -7,10 +7,11 @@ namespace NorDevBestOfBot.Handlers;
 
 public class GetTopFiveComments
 {
-    public static async Task HandleGetTopFiveComments(SocketSlashCommand command, HttpClient httpClient, DiscordSocketClient client)
+    public static async Task HandleGetTopFiveComments(SocketSlashCommand command, HttpClient httpClient)
     {
         await command.DeferAsync();
 
+        bool isEphemeral = (bool)command.Data.Options.First().Value;
 
         // Post to the general channel if the nominated message didn't orginate in the general channel
         var channel = await command.GetChannelAsync() as ITextChannel;
@@ -77,10 +78,22 @@ public class GetTopFiveComments
                             style: ButtonStyle.Link,
                             row: 0);
 
-                    await channel!.SendMessageAsync(
-                        components: linkButton.Build(),
-                        embeds: embeds.ToArray());
+                    // Post for everyone to see
+                    if(!isEphemeral)
+                    {
+                        await channel!.SendMessageAsync(
+                            components: linkButton.Build(),
+                            embeds: embeds.ToArray());
+                    }
 
+                    // post just to user
+                    if (isEphemeral)
+                    {
+                        await command.FollowupAsync(
+                            components: linkButton.Build(),
+                            embeds: embeds.ToArray(),
+                            ephemeral: isEphemeral);
+                    }
                     counter++;
                 }
             }

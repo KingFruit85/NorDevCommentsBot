@@ -83,7 +83,8 @@ public class Program : IDisposable
 
         var getTopFive = new SlashCommandBuilder()
         .WithName("get-top-five-comments")
-        .WithDescription("Gets the top five comments of all time from the server.");
+        .WithDescription("Gets the top five comments of all time from the server.")
+        .AddOption("Is ephemeral", ApplicationCommandOptionType.Boolean,"Keep this post hidden?", isRequired:true);
 
         var getUsersTopFive = new SlashCommandBuilder()
         .WithName("get-users-top-five-comments")
@@ -128,7 +129,7 @@ public class Program : IDisposable
                 await GetRandomComment.HandleGetRandomComment(command, HttpClient);
                 break;
             case "get-top-five-comments":
-                await GetTopFiveComments.HandleGetTopFiveComments(command, HttpClient, DiscordClient!);
+                await GetTopFiveComments.HandleGetTopFiveComments(command, HttpClient);
                 break;
             case "get-users-top-five-comments":
                 await GetUsersTopFiveComments.HandleGetUsersTopFiveComments(command, HttpClient);
