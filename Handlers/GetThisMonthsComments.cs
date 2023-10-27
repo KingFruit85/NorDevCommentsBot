@@ -5,9 +5,9 @@ using System.Net.Http.Json;
 
 namespace NorDevBestOfBot.Handlers;
 
-public class GetTopFiveComments
+public class GetThisMonthsComments
 {
-    public static async Task HandleGetTopFiveComments(SocketSlashCommand command, HttpClient httpClient)
+    public static async Task HandleGetThisMonthsComments(SocketSlashCommand command, HttpClient httpClient)
     {
         var firstOption = command.Data.Options.FirstOrDefault();
         bool isEphemeral = firstOption == null || (bool)firstOption.Value;
@@ -20,18 +20,33 @@ public class GetTopFiveComments
         // colours are a visual cue that two posts are related
         List<Color> postColours = new()
         {
-                new Color(244, 67, 54),   // #F44336 (Red)
-                new Color(0, 188, 212),   // #00BCD4 (Cyan)
-                new Color(156, 39, 176),  // #9C27B0 (Purple)
-                new Color(255, 193, 7),   // #FFC107 (Amber)
-                new Color(76, 175, 80)    // #4CAF50 (Green)
+            new Color(244, 67, 54),   // #F44336 (Red)
+            new Color(0, 188, 212),   // #00BCD4 (Cyan)
+            new Color(156, 39, 176),  // #9C27B0 (Purple)
+            new Color(255, 193, 7),   // #FFC107 (Amber)
+            new Color(76, 175, 80),   // #4CAF50 (Green)
+            new Color(233, 30, 99),   // #E91E63 (Pink)
+            new Color(33, 150, 243),  // #2196F3 (Blue)
+            new Color(255, 87, 34),   // #FF5722 (Deep Orange)
+            new Color(63, 81, 181),   // #3F51B5 (Indigo)
+            new Color(255, 152, 0),   // #FF9800 (Orange)
+            new Color(205, 220, 57),  // #CDDC39 (Lime)
+            new Color(158, 158, 158),  // #9E9E9E (Grey)
+            new Color(255, 235, 59),  // #FFEB3B (Yellow)
+            new Color(48, 79, 254),   // #304FFE (Blue)
+            new Color(255, 64, 129),  // #FF4081 (Pink)
+            new Color(63, 81, 181),   // #3F51B5 (Indigo)
+            new Color(33, 150, 243),  // #2196F3 (Blue)
+            new Color(255, 87, 34),   // #FF5722 (Deep Orange)
+            new Color(255, 152, 0)    // #FF9800 (Orange)
         };
+
         int counter = 0;
 
         List<Embed> comments = new();
         try
         {
-            var response = await httpClient.GetFromJsonAsync<List<Comment>>("https://nordevcommentsbackend.fly.dev/api/messages/gettopfivecomments");
+            var response = await httpClient.GetFromJsonAsync<List<Comment>>("https://nordevcommentsbackend.fly.dev/api/messages/getthismonthscomments");
             if (response is not null)
             {
                 foreach (var comment in response)
@@ -96,6 +111,11 @@ public class GetTopFiveComments
                             ephemeral: isEphemeral);
                     }
                     counter++;
+
+                    if (counter >= postColours.Count)
+                    {
+                        counter = 0;
+                    }
                 }
             }
         }

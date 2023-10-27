@@ -88,6 +88,11 @@ public class Program : IDisposable
         .WithDescription("Gets the top five comments of all time from the server.")
         .AddOption("isephemeral", ApplicationCommandOptionType.Boolean,"Keep this post hidden?", isRequired:false);
 
+        var getThisMonthsComments = new SlashCommandBuilder()
+        .WithName("get-this-months-comments")
+        .WithDescription("Gets this months comments.")
+        .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
+
         var getUsersTopFive = new SlashCommandBuilder()
         .WithName("get-users-top-five-comments")
         .WithDescription("Gets a users top five comments.")
@@ -112,6 +117,7 @@ public class Program : IDisposable
                 {
                     getRandom.Build(),
                     getTopFive.Build(),
+                    getThisMonthsComments.Build(),
                     getUsersTopFive.Build(),
                     getTopTenUsersByVoteCount.Build(),
                     getTopTenUsersByPopstCount.Build(),
@@ -136,6 +142,9 @@ public class Program : IDisposable
                 break;
             case "get-top-five-comments":
                 await GetTopFiveComments.HandleGetTopFiveComments(command, HttpClient);
+                break;
+            case "get-this-months-comments":
+                await GetTopFiveComments.HandleThisMonthsComments(command, HttpClient);
                 break;
             case "get-users-top-five-comments":
                 await GetUsersTopFiveComments.HandleGetUsersTopFiveComments(command, HttpClient);
