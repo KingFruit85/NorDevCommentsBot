@@ -42,9 +42,10 @@ public class GetThisMonthsComments
             new Color(255, 152, 0)    // #FF9800 (Orange)
         };
 
-        int counter = 0;
+        int colourCounter = 0;
 
         List<Embed> comments = new();
+
         try
         {
             var response = await httpClient.GetFromJsonAsync<List<Comment>>("https://nordevcommentsbackend.fly.dev/api/messages/getthismonthscomments");
@@ -78,7 +79,7 @@ public class GetThisMonthsComments
                         var quotedMessage = new EmbedBuilder()
                             .WithAuthor(refedMessage.Author)
                             .WithDescription(refedMessage.Content)
-                            .WithColor(postColours[counter])
+                            .WithColor(postColours[colourCounter])
                             .WithUrl(refedMessage.GetJumpUrl());
 
                         var embed = refedMessage.Embeds.FirstOrDefault();
@@ -107,7 +108,7 @@ public class GetThisMonthsComments
                     var message = new EmbedBuilder()
                         .WithAuthor($"{nominatedMessage.Author.Username} {replyHint}", nominatedMessage.Author.GetAvatarUrl())
                         .WithDescription(nominatedMessage.Content)
-                        .WithColor(postColours[counter])
+                        .WithColor(postColours[colourCounter])
                         .WithFooter(footer => footer.Text = $"Votes: {comment.voteCount}")
                         .WithUrl(nominatedMessage.GetJumpUrl())
                         .Build();
@@ -149,6 +150,10 @@ public class GetThisMonthsComments
                         await channel!.SendMessageAsync(
                             components: linkButton.Build(),
                             embeds: embeds.ToArray());
+
+                        await command.FollowupAsync(
+                            text:"I hope you enjoyed reading though this month's comments as much as I did 🤗",
+                            ephemeral: true);
                     }
 
                     // post just to user
@@ -159,11 +164,11 @@ public class GetThisMonthsComments
                             embeds: embeds.ToArray(),
                             ephemeral: isEphemeral);
                     }
-                    counter++;
+                    colourCounter++;
 
-                    if (counter >= postColours.Count)
+                    if (colourCounter >= postColours.Count)
                     {
-                        counter = 0;
+                        colourCounter = 0;
                     }
 
                 }

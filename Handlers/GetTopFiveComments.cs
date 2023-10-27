@@ -7,7 +7,7 @@ namespace NorDevBestOfBot.Handlers;
 
 public class GetTopFiveComments
 {
-    public static async Task HandleGetTopFiveComments(SocketSlashCommand command, HttpClient httpClient)
+    public static async Task HandleGetTopFiveComments(SocketSlashCommand command, HttpClient httpClient, DiscordSocketClient client)
     {
         var firstOption = command.Data.Options.FirstOrDefault();
         bool isEphemeral = firstOption == null || (bool)firstOption.Value;
@@ -20,15 +20,31 @@ public class GetTopFiveComments
         // colours are a visual cue that two posts are related
         List<Color> postColours = new()
         {
-                new Color(244, 67, 54),   // #F44336 (Red)
-                new Color(0, 188, 212),   // #00BCD4 (Cyan)
-                new Color(156, 39, 176),  // #9C27B0 (Purple)
-                new Color(255, 193, 7),   // #FFC107 (Amber)
-                new Color(76, 175, 80)    // #4CAF50 (Green)
+            new Color(244, 67, 54),   // #F44336 (Red)
+            new Color(0, 188, 212),   // #00BCD4 (Cyan)
+            new Color(156, 39, 176),  // #9C27B0 (Purple)
+            new Color(255, 193, 7),   // #FFC107 (Amber)
+            new Color(76, 175, 80),   // #4CAF50 (Green)
+            new Color(233, 30, 99),   // #E91E63 (Pink)
+            new Color(33, 150, 243),  // #2196F3 (Blue)
+            new Color(255, 87, 34),   // #FF5722 (Deep Orange)
+            new Color(63, 81, 181),   // #3F51B5 (Indigo)
+            new Color(255, 152, 0),   // #FF9800 (Orange)
+            new Color(205, 220, 57),  // #CDDC39 (Lime)
+            new Color(158, 158, 158),  // #9E9E9E (Grey)
+            new Color(255, 235, 59),  // #FFEB3B (Yellow)
+            new Color(48, 79, 254),   // #304FFE (Blue)
+            new Color(255, 64, 129),  // #FF4081 (Pink)
+            new Color(63, 81, 181),   // #3F51B5 (Indigo)
+            new Color(33, 150, 243),  // #2196F3 (Blue)
+            new Color(255, 87, 34),   // #FF5722 (Deep Orange)
+            new Color(255, 152, 0)    // #FF9800 (Orange)
         };
-        int counter = 0;
+
+        int colourCounter = 0;
 
         List<Embed> comments = new();
+
         try
         {
             var response = await httpClient.GetFromJsonAsync<List<Comment>>("https://nordevcommentsbackend.fly.dev/api/messages/gettopfivecomments");
@@ -40,36 +56,84 @@ public class GetTopFiveComments
                     List<Embed> embeds = new();
                     string replyHint = string.Empty;
 
-                    // check if quote exists
-                    if (!string.IsNullOrWhiteSpace(comment.quotedMessageAuthor))
-                    {
-                        replyHint = $"(replying to {comment.quotedMessageAuthor})";
-                        var quotedMessage = new EmbedBuilder()
-                            .WithAuthor(comment.quotedMessageAuthor, await Helpers.TryGetAvatarAsync(comment.quotedMessageAvatarLink!))
-                            .WithDescription(comment.quotedMessage)
-                            .WithColor(postColours[counter]);
+                    string[] messageLinkParts = comment.messageLink!.Split('/');
+                    ulong guildId = ulong.Parse(messageLinkParts[4]);
+                    ulong channelId = ulong.Parse(messageLinkParts[5]);
+                    ulong nominatedMessageId = ulong.Parse(messageLinkParts[6]);
+                    var guild = client.GetGuild(guildId);
+                    var originChannel = guild.GetTextChannel(channelId);
 
-                        if (!string.IsNullOrWhiteSpace(comment.quotedMessageImage))
+                    var nominatedMessage = await originChannel.GetMessageAsync(nominatedMessageId);
+                    IMessage? refedMessage = null;
+
+                    if (nominatedMessage is IUserMessage userMessage)
+                    {
+                        refedMessage = userMessage.ReferencedMessage;
+                    }
+
+                    if (refedMessage != null)
+                    {
+                        replyHint = $"(replying to {refedMessage.Author.Username})";
+
+                        var quotedMessage = new EmbedBuilder()
+                            .WithAuthor(refedMessage.Author)
+                            .WithDescription(refedMessage.Content)
+                            .WithColor(postColours[colourCounter])
+                            .WithUrl(refedMessage.GetJumpUrl());
+
+                        var embed = refedMessage.Embeds.FirstOrDefault();
+
+                        if (embed != null)
                         {
-                            quotedMessage.ImageUrl = comment.quotedMessageImage;
+                            if (embed.Image.HasValue)
+                            {
+                                quotedMessage.ImageUrl = embed.Url;
+                            }
                         }
 
+                        var attach = refedMessage.Attachments.FirstOrDefault();
+
+                        if (attach != null)
+                        {
+                            if (attach.Width > 0 && attach.Height > 0)
+                            {
+                                quotedMessage.ImageUrl = attach.Url;
+                            }
+                        }
                         embeds.Add(quotedMessage.Build());
                     }
 
                     // create nominated post
                     var message = new EmbedBuilder()
-                        .WithAuthor($"{comment.userName} {replyHint}", await Helpers.TryGetAvatarAsync(comment.iconUrl!))
-                        .WithDescription(comment.comment)
-                        .WithColor(postColours[counter])
-                        .WithFooter(footer => footer.Text = $"Votes: {comment.voteCount}");
+                        .WithAuthor($"{nominatedMessage.Author.Username} {replyHint}", nominatedMessage.Author.GetAvatarUrl())
+                        .WithDescription(nominatedMessage.Content)
+                        .WithColor(postColours[colourCounter])
+                        .WithFooter(footer => footer.Text = $"Votes: {comment.voteCount}")
+                        .WithUrl(nominatedMessage.GetJumpUrl())
+                        .Build();
 
-                    if (!string.IsNullOrWhiteSpace(comment.imageUrl))
+                    embeds.Add(message);
+
+                    if (nominatedMessage.Embeds.Any() || nominatedMessage.Attachments.Any())
                     {
-                        message.ImageUrl = comment.imageUrl;
-                    }
+                        foreach (var embd in nominatedMessage.Embeds)
+                        {
+                            var newEmbed = new EmbedBuilder()
+                                .WithUrl(nominatedMessage.GetJumpUrl())
+                                .WithImageUrl(embd.Url)
+                                .Build();
+                            embeds.Add(newEmbed);
+                        }
 
-                    embeds.Add(message.Build());
+                        foreach (var atchmt in nominatedMessage.Attachments)
+                        {
+                            var newEmbed = new EmbedBuilder()
+                                .WithUrl(nominatedMessage.GetJumpUrl())
+                                .WithImageUrl(atchmt.Url)
+                                .Build();
+                            embeds.Add(newEmbed);
+                        }
+                    }
 
                     // post
                     var linkButton = new ComponentBuilder()
@@ -80,11 +144,15 @@ public class GetTopFiveComments
                             row: 0);
 
                     // Post for everyone to see
-                    if(!isEphemeral)
+                    if (!isEphemeral)
                     {
                         await channel!.SendMessageAsync(
                             components: linkButton.Build(),
                             embeds: embeds.ToArray());
+
+                        await command.FollowupAsync(
+                            text: "I hope you enjoyed reading though this month's comments as much as I did 🤗",
+                            ephemeral: true);
                     }
 
                     // post just to user
@@ -95,7 +163,13 @@ public class GetTopFiveComments
                             embeds: embeds.ToArray(),
                             ephemeral: isEphemeral);
                     }
-                    counter++;
+                    colourCounter++;
+
+                    if (colourCounter >= postColours.Count)
+                    {
+                        colourCounter = 0;
+                    }
+
                 }
             }
         }
