@@ -75,8 +75,11 @@ public class GetTopTenComments
                     {
                         replyHint = $"(replying to {refedMessage.Author.Username})";
 
+                        string refUserNickname = (refedMessage.Author as IGuildUser)?.Nickname ?? refedMessage.Author.Username;
+                        string refAvatarUrl = refedMessage.Author.GetAvatarUrl();
+
                         var quotedMessage = new EmbedBuilder()
-                            .WithAuthor(refedMessage.Author)
+                            .WithAuthor(name: refUserNickname, iconUrl:refAvatarUrl)
                             .WithDescription(refedMessage.Content)
                             .WithColor(postColours[colourCounter])
                             .WithUrl(refedMessage.GetJumpUrl());
@@ -103,9 +106,12 @@ public class GetTopTenComments
                         embeds.Add(quotedMessage.Build());
                     }
 
+                    string nickname = (nominatedMessage.Author as IGuildUser)?.Nickname ?? nominatedMessage.Author.Username;
+                    string avatarUrl = nominatedMessage.Author.GetAvatarUrl();
+
                     // create nominated post
                     var message = new EmbedBuilder()
-                        .WithAuthor($"{nominatedMessage.Author.Username} {replyHint}", nominatedMessage.Author.GetAvatarUrl())
+                        .WithAuthor(name: $"{nickname} {replyHint}", iconUrl: avatarUrl)
                         .WithDescription(nominatedMessage.Content)
                         .WithColor(postColours[colourCounter])
                         .WithFooter(footer => footer.Text = $"Votes: {comment.voteCount}")
@@ -149,10 +155,6 @@ public class GetTopTenComments
                         await channel!.SendMessageAsync(
                             components: linkButton.Build(),
                             embeds: embeds.ToArray());
-
-                        await command.FollowupAsync(
-                            text: "I hope you enjoyed reading though this month's comments as much as I did 🤗",
-                            ephemeral: true);
                     }
 
                     // post just to user
@@ -163,6 +165,11 @@ public class GetTopTenComments
                             embeds: embeds.ToArray(),
                             ephemeral: isEphemeral);
                     }
+
+                    await command.FollowupAsync(
+                        text: "I hope you enjoyed reading though this month's comments as much as I did 🤗",
+                        ephemeral: true);
+
                     colourCounter++;
 
                     if (colourCounter >= postColours.Count)
