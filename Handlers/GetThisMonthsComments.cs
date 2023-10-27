@@ -2,6 +2,7 @@
 using Discord;
 using NorDevBestOfBot.Models;
 using System.Net.Http.Json;
+using System.Diagnostics;
 
 namespace NorDevBestOfBot.Handlers;
 
@@ -78,31 +79,28 @@ public class GetThisMonthsComments
                             .WithAuthor(refedMessage.Author)
                             .WithDescription(refedMessage.Content)
                             .WithColor(postColours[counter])
-                            .WithUrl(refedMessage.GetJumpUrl())
-                            .Build();
+                            .WithUrl(refedMessage.GetJumpUrl());
 
-                        embeds.Add(quotedMessage);
+                        var embed = refedMessage.Embeds.FirstOrDefault();
 
-                        if (refedMessage.Embeds.Any() || refedMessage.Attachments.Any())
+                        if (embed != null)
                         {
-                            foreach (var embd in refedMessage.Embeds)
+                            if (embed.Image.HasValue)
                             {
-                                var newEmbed = new EmbedBuilder()
-                                    .WithUrl(refedMessage.GetJumpUrl())
-                                    .WithImageUrl(embd.Url)
-                                    .Build();
-                                embeds.Add(newEmbed);
-                            }
-
-                            foreach (var atchmt in refedMessage.Attachments)
-                            {
-                                var newEmbed = new EmbedBuilder()
-                                    .WithUrl(refedMessage.GetJumpUrl())
-                                    .WithImageUrl(atchmt.Url)
-                                    .Build();
-                                embeds.Add(newEmbed);
+                                quotedMessage.ImageUrl = embed.Url;
                             }
                         }
+
+                        var attach = refedMessage.Attachments.FirstOrDefault();
+
+                        if (attach != null)
+                        {
+                            if (attach.Width > 0 && attach.Height > 0)
+                            {
+                                quotedMessage.ImageUrl = attach.Url;
+                            }
+                        }
+                        embeds.Add(quotedMessage.Build());
                     }
 
                     // create nominated post
@@ -121,7 +119,7 @@ public class GetThisMonthsComments
                         foreach (var embd in nominatedMessage.Embeds)
                         {
                             var newEmbed = new EmbedBuilder()
-                                .WithUrl(refedMessage.GetJumpUrl())
+                                .WithUrl(nominatedMessage.GetJumpUrl())
                                 .WithImageUrl(embd.Url)
                                 .Build();
                             embeds.Add(newEmbed);
@@ -130,7 +128,7 @@ public class GetThisMonthsComments
                         foreach (var atchmt in nominatedMessage.Attachments)
                         {
                             var newEmbed = new EmbedBuilder()
-                                .WithUrl(refedMessage.GetJumpUrl())
+                                .WithUrl(nominatedMessage.GetJumpUrl())
                                 .WithImageUrl(atchmt.Url)
                                 .Build();
                             embeds.Add(newEmbed);
@@ -146,7 +144,7 @@ public class GetThisMonthsComments
                             row: 0);
 
                     // Post for everyone to see
-                    if(!isEphemeral)
+                    if (!isEphemeral)
                     {
                         await channel!.SendMessageAsync(
                             components: linkButton.Build(),
@@ -167,6 +165,7 @@ public class GetThisMonthsComments
                     {
                         counter = 0;
                     }
+
                 }
             }
         }
