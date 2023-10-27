@@ -9,9 +9,9 @@ public class GetTopFiveComments
 {
     public static async Task HandleGetTopFiveComments(SocketSlashCommand command, HttpClient httpClient)
     {
-        await command.DeferAsync();
-
         bool isEphemeral = (bool)command.Data.Options.First().Value;
+
+        await command.DeferAsync(ephemeral: isEphemeral);
 
         // Post to the general channel if the nominated message didn't orginate in the general channel
         var channel = await command.GetChannelAsync() as ITextChannel;
@@ -43,17 +43,17 @@ public class GetTopFiveComments
                     if (!string.IsNullOrWhiteSpace(comment.quotedMessageAuthor))
                     {
                         replyHint = $"(replying to {comment.quotedMessageAuthor})";
-                        var quotedMEssage = new EmbedBuilder()
+                        var quotedMessage = new EmbedBuilder()
                             .WithAuthor(comment.quotedMessageAuthor, await Helpers.TryGetAvatarAsync(comment.quotedMessageAvatarLink!))
                             .WithDescription(comment.quotedMessage)
                             .WithColor(postColours[counter]);
 
                         if (!string.IsNullOrWhiteSpace(comment.quotedMessageImage))
                         {
-                            quotedMEssage.ImageUrl = comment.quotedMessageImage;
+                            quotedMessage.ImageUrl = comment.quotedMessageImage;
                         }
 
-                        embeds.Add(quotedMEssage.Build());
+                        embeds.Add(quotedMessage.Build());
                     }
 
                     // create nominated post
