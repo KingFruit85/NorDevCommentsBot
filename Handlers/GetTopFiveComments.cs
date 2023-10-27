@@ -75,7 +75,7 @@ public class GetTopTenComments
                     {
                         replyHint = $"(replying to {refedMessage.Author.Username})";
 
-                        string refUserNickname = (refedMessage.Author as IGuildUser)?.DisplayName ?? refedMessage.Author.Username;
+                        string refUserNickname = (refedMessage.Author as IGuildUser)?.Nickname ?? refedMessage.Author.GlobalName;
                         string refAvatarUrl = refedMessage.Author.GetAvatarUrl();
 
                         var quotedMessage = new EmbedBuilder()
@@ -106,7 +106,8 @@ public class GetTopTenComments
                         embeds.Add(quotedMessage.Build());
                     }
 
-                    string nickname = (nominatedMessage.Author as IGuildUser)?.DisplayName ?? nominatedMessage.Author.Username;
+
+                    string nickname = (nominatedMessage.Author as IGuildUser)?.Nickname ?? nominatedMessage.Author.GlobalName;
                     string avatarUrl = nominatedMessage.Author.GetAvatarUrl();
 
                     // create nominated post
