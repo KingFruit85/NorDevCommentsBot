@@ -11,10 +11,9 @@ public class GetTopFiveComments
     {
         await command.DeferAsync();
 
-        ulong GeneralChannelId = ulong.Parse(Environment.GetEnvironmentVariable("GeneralChannelId")!);
 
         // Post to the general channel if the nominated message didn't orginate in the general channel
-        var generalChannel = client.GetChannel(GeneralChannelId) as ITextChannel;
+        var channel = await command.GetChannelAsync() as ITextChannel;
 
         // colours are a visual cue that two posts are related
         List<Color> postColours = new()
@@ -78,7 +77,7 @@ public class GetTopFiveComments
                             style: ButtonStyle.Link,
                             row: 0);
 
-                    await generalChannel!.SendMessageAsync(
+                    await channel!.SendMessageAsync(
                         components: linkButton.Build(),
                         embeds: embeds.ToArray());
 
@@ -91,6 +90,6 @@ public class GetTopFiveComments
             throw new Exception(ex.Message);
         }
 
-        await command.FollowupAsync(text:"TGehre you go, the top 5 comments of all time (so far)!");
+        await command.FollowupAsync(text:"There you go, the top 5 comments of all time (so far)!");
     }
 }
