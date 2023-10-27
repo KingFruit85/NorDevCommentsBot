@@ -144,7 +144,7 @@ public class Program : IDisposable
                 await GetTopFiveComments.HandleGetTopFiveComments(command, HttpClient);
                 break;
             case "get-this-months-comments":
-                await GetThisMonthsComments.HandleGetThisMonthsComments(command, HttpClient);
+                await GetThisMonthsComments.HandleGetThisMonthsComments(command, HttpClient, DiscordClient!);
                 break;
             case "get-users-top-five-comments":
                 await GetUsersTopFiveComments.HandleGetUsersTopFiveComments(command, HttpClient);

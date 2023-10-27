@@ -7,7 +7,7 @@ namespace NorDevBestOfBot.Handlers;
 
 public class GetThisMonthsComments
 {
-    public static async Task HandleGetThisMonthsComments(SocketSlashCommand command, HttpClient httpClient)
+    public static async Task HandleGetThisMonthsComments(SocketSlashCommand command, HttpClient httpClient, DiscordSocketClient client)
     {
         var firstOption = command.Data.Options.FirstOrDefault();
         bool isEphemeral = firstOption == null || (bool)firstOption.Value;
@@ -55,36 +55,87 @@ public class GetThisMonthsComments
                     List<Embed> embeds = new();
                     string replyHint = string.Empty;
 
-                    // check if quote exists
-                    if (!string.IsNullOrWhiteSpace(comment.quotedMessageAuthor))
+                    string[] messageLinkParts = comment.messageLink!.Split('/');
+                    ulong guildId = ulong.Parse(messageLinkParts[4]);
+                    ulong channelId = ulong.Parse(messageLinkParts[5]);
+                    ulong nominatedMessageId = ulong.Parse(messageLinkParts[6]);
+                    var guild = client.GetGuild(guildId);
+                    var originChannel = guild.GetTextChannel(channelId);
+
+                    var nominatedMessage = await originChannel.GetMessageAsync(nominatedMessageId);
+                    IMessage? refedMessage = null;
+
+                    if (nominatedMessage is IUserMessage userMessage)
                     {
-                        replyHint = $"(replying to {comment.quotedMessageAuthor})";
+                        refedMessage = userMessage.ReferencedMessage;
+                    }
+
+                    if (refedMessage != null)
+                    {
+                        replyHint = $"(replying to {refedMessage.Author.Username})";
+
                         var quotedMessage = new EmbedBuilder()
-                            .WithAuthor(comment.quotedMessageAuthor, await Helpers.TryGetAvatarAsync(comment.quotedMessageAvatarLink!))
-                            .WithDescription(comment.quotedMessage)
-                            .WithColor(postColours[counter]);
+                            .WithAuthor(refedMessage.Author)
+                            .WithDescription(refedMessage.Content)
+                            .WithColor(postColours[counter])
+                            .WithUrl(refedMessage.GetJumpUrl())
+                            .Build();
 
-                        if (!string.IsNullOrWhiteSpace(comment.quotedMessageImage))
+                        embeds.Add(quotedMessage);
+
+                        if (refedMessage.Embeds.Any() || refedMessage.Attachments.Any())
                         {
-                            quotedMessage.ImageUrl = comment.quotedMessageImage;
-                        }
+                            foreach (var embd in refedMessage.Embeds)
+                            {
+                                var newEmbed = new EmbedBuilder()
+                                    .WithUrl(refedMessage.GetJumpUrl())
+                                    .WithImageUrl(embd.Url)
+                                    .Build();
+                                embeds.Add(newEmbed);
+                            }
 
-                        embeds.Add(quotedMessage.Build());
+                            foreach (var atchmt in refedMessage.Attachments)
+                            {
+                                var newEmbed = new EmbedBuilder()
+                                    .WithUrl(refedMessage.GetJumpUrl())
+                                    .WithImageUrl(atchmt.Url)
+                                    .Build();
+                                embeds.Add(newEmbed);
+                            }
+                        }
                     }
 
                     // create nominated post
                     var message = new EmbedBuilder()
-                        .WithAuthor($"{comment.userName} {replyHint}", await Helpers.TryGetAvatarAsync(comment.iconUrl!))
-                        .WithDescription(comment.comment)
+                        .WithAuthor($"{nominatedMessage.Author.Username} {replyHint}", nominatedMessage.Author.GetAvatarUrl())
+                        .WithDescription(nominatedMessage.Content)
                         .WithColor(postColours[counter])
-                        .WithFooter(footer => footer.Text = $"Votes: {comment.voteCount}");
+                        .WithFooter(footer => footer.Text = $"Votes: {comment.voteCount}")
+                        .WithUrl(nominatedMessage.GetJumpUrl())
+                        .Build();
 
-                    if (!string.IsNullOrWhiteSpace(comment.imageUrl))
+                    embeds.Add(message);
+
+                    if (nominatedMessage.Embeds.Any() || nominatedMessage.Attachments.Any())
                     {
-                        message.ImageUrl = comment.imageUrl;
-                    }
+                        foreach (var embd in nominatedMessage.Embeds)
+                        {
+                            var newEmbed = new EmbedBuilder()
+                                .WithUrl(refedMessage.GetJumpUrl())
+                                .WithImageUrl(embd.Url)
+                                .Build();
+                            embeds.Add(newEmbed);
+                        }
 
-                    embeds.Add(message.Build());
+                        foreach (var atchmt in nominatedMessage.Attachments)
+                        {
+                            var newEmbed = new EmbedBuilder()
+                                .WithUrl(refedMessage.GetJumpUrl())
+                                .WithImageUrl(atchmt.Url)
+                                .Build();
+                            embeds.Add(newEmbed);
+                        }
+                    }
 
                     // post
                     var linkButton = new ComponentBuilder()

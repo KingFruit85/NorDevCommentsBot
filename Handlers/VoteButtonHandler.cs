@@ -89,8 +89,8 @@ internal static class VoteButtonHandler
             messageLink = messageLink.Trim(),
             messageId = messageId,
             serverId = serverId,
-            userName = component.User.Username,
-            userTag  = component.User.Username,
+            userName = message.Author.Username,
+            userTag  = message.Author.Username,
             comment = message.Content,
             voteCount = voteCount,
             iconUrl = message.Author.GetAvatarUrl(),
@@ -101,7 +101,7 @@ internal static class VoteButtonHandler
             quotedMessageAuthor = "",
             quotedMessageAvatarLink = "",
             quotedMessageImage = "",
-            nickname = component.User.Username,
+            nickname = message.Author.Username,
             quotedMessageAuthorNickname = "",
             quotedMessageMessageLink = ""
         };
