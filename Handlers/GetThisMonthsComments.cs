@@ -2,7 +2,6 @@
 using Discord;
 using NorDevBestOfBot.Models;
 using System.Net.Http.Json;
-using System.Diagnostics;
 
 namespace NorDevBestOfBot.Handlers;
 
@@ -76,8 +75,11 @@ public class GetThisMonthsComments
                     {
                         replyHint = $"(replying to {refedMessage.Author.Username})";
 
+                        string refUserNickname = (refedMessage.Author as IGuildUser)?.Nickname ?? refedMessage.Author.GlobalName;
+                        string refAvatarUrl = refedMessage.Author.GetAvatarUrl();
+
                         var quotedMessage = new EmbedBuilder()
-                            .WithAuthor(refedMessage.Author)
+                            .WithAuthor(name: refUserNickname, iconUrl:refAvatarUrl)
                             .WithDescription(refedMessage.Content)
                             .WithColor(postColours[colourCounter])
                             .WithUrl(refedMessage.GetJumpUrl());
@@ -104,9 +106,12 @@ public class GetThisMonthsComments
                         embeds.Add(quotedMessage.Build());
                     }
 
+                    string nickname = (nominatedMessage.Author as IGuildUser)?.Nickname ?? nominatedMessage.Author.GlobalName;
+                    string avatarUrl = nominatedMessage.Author.GetAvatarUrl();
+
                     // create nominated post
                     var message = new EmbedBuilder()
-                        .WithAuthor($"{nominatedMessage.Author.Username} {replyHint}", nominatedMessage.Author.GetAvatarUrl())
+                        .WithAuthor($"{nickname} {replyHint}", avatarUrl)
                         .WithDescription(nominatedMessage.Content)
                         .WithColor(postColours[colourCounter])
                         .WithFooter(footer => footer.Text = $"Votes: {comment.voteCount}")
