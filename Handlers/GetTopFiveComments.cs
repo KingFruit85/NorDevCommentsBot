@@ -43,25 +43,25 @@ public class GetTopFiveComments
                     if (!string.IsNullOrWhiteSpace(comment.quotedMessageAuthor))
                     {
                         replyHint = $"(replying to {comment.quotedMessageAuthor})";
-                        var questedMessage = new EmbedBuilder()
+                        var quotedMEssage = new EmbedBuilder()
                             .WithAuthor(comment.quotedMessageAuthor, await Helpers.TryGetAvatarAsync(comment.quotedMessageAvatarLink!))
                             .WithDescription(comment.quotedMessage)
                             .WithColor(postColours[counter]);
 
                         if (!string.IsNullOrWhiteSpace(comment.quotedMessageImage))
                         {
-                            questedMessage.ImageUrl = comment.quotedMessageImage;
+                            quotedMEssage.ImageUrl = comment.quotedMessageImage;
                         }
 
-                        embeds.Add(questedMessage.Build());
+                        embeds.Add(quotedMEssage.Build());
                     }
 
                     // create nominated post
                     var message = new EmbedBuilder()
-                    .WithAuthor($"{comment.userName} {replyHint}", await Helpers.TryGetAvatarAsync(comment.iconUrl!))
-                    .WithDescription(comment.comment)
-                    .WithColor(postColours[counter])
-                    .WithFooter(footer => footer.Text = $"Votes: {comment.voteCount}");
+                        .WithAuthor($"{comment.userName} {replyHint}", await Helpers.TryGetAvatarAsync(comment.iconUrl!))
+                        .WithDescription(comment.comment)
+                        .WithColor(postColours[counter])
+                        .WithFooter(footer => footer.Text = $"Votes: {comment.voteCount}");
 
                     if (!string.IsNullOrWhiteSpace(comment.imageUrl))
                     {
@@ -102,7 +102,5 @@ public class GetTopFiveComments
         {
             throw new Exception(ex.Message);
         }
-
-        await command.FollowupAsync(text:"There you go, the top 5 comments of all time (so far)!");
     }
 }
