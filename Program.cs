@@ -84,7 +84,7 @@ public class Program : IDisposable
         var getTopFive = new SlashCommandBuilder()
         .WithName("get-top-five-comments")
         .WithDescription("Gets the top five comments of all time from the server.")
-        .AddOption("Is ephemeral", ApplicationCommandOptionType.Boolean,"Keep this post hidden?", isRequired:true);
+        .AddOption("IsEphemeral", ApplicationCommandOptionType.Boolean,"Keep this post hidden?", isRequired:true);
 
         var getUsersTopFive = new SlashCommandBuilder()
         .WithName("get-users-top-five-comments")
