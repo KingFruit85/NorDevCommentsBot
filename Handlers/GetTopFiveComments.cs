@@ -75,7 +75,7 @@ public class GetTopTenComments
                     {
                         replyHint = $"(replying to {refedMessage.Author.Username})";
 
-                        string refUserNickname = (refedMessage.Author as IGuildUser)?.Nickname ?? refedMessage.Author.Username;
+                        string refUserNickname = (refedMessage.Author as IGuildUser)?.DisplayName ?? refedMessage.Author.Username;
                         string refAvatarUrl = refedMessage.Author.GetAvatarUrl();
 
                         var quotedMessage = new EmbedBuilder()
@@ -106,7 +106,7 @@ public class GetTopTenComments
                         embeds.Add(quotedMessage.Build());
                     }
 
-                    string nickname = (nominatedMessage.Author as IGuildUser)?.Nickname ?? nominatedMessage.Author.Username;
+                    string nickname = (nominatedMessage.Author as IGuildUser)?.DisplayName ?? nominatedMessage.Author.Username;
                     string avatarUrl = nominatedMessage.Author.GetAvatarUrl();
 
                     // create nominated post
@@ -166,9 +166,6 @@ public class GetTopTenComments
                             ephemeral: isEphemeral);
                     }
 
-                    await command.FollowupAsync(
-                        text: "I hope you enjoyed reading though this month's comments as much as I did 🤗",
-                        ephemeral: true);
 
                     colourCounter++;
 
@@ -178,6 +175,9 @@ public class GetTopTenComments
                     }
 
                 }
+                    await command.FollowupAsync(
+                        text: "I hope you enjoyed reading though this month's comments as much as I did 🤗",
+                        ephemeral: true);
             }
         }
         catch (Exception ex)
