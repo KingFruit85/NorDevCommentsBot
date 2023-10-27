@@ -8,7 +8,9 @@ internal class GetTopTenUsersByPostCount
 {
     internal static async Task HandleGetTopTenUsersByPostCount(SocketSlashCommand command, HttpClient httpClient)
     {
-        await command.DeferAsync();
+        bool isEphemeral = ((bool?)command.Data.Options.First().Value) ?? true;
+
+        await command.DeferAsync(ephemeral: isEphemeral);
 
         var embed = new EmbedBuilder()
             .WithTitle("The top ten users by total 📫 post 📫 count");

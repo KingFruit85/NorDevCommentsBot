@@ -10,7 +10,9 @@ internal class GetUsersTopFiveComments
 {
     public static async Task HandleGetUsersTopFiveComments(SocketSlashCommand command, HttpClient httpClient)
     {
-        await command.DeferAsync();
+        bool isEphemeral = ((bool?)command.Data.Options.First().Value) ?? true;
+
+        await command.DeferAsync(ephemeral: isEphemeral);
 
         List<Color> postColours = new()
         {

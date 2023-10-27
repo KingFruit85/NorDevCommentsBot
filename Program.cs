@@ -79,25 +79,31 @@ public class Program : IDisposable
 
         var getRandom = new SlashCommandBuilder()
         .WithName("get-random-comment")
-        .WithDescription("Gets a random comment from the database.");
+        .WithDescription("Gets a random comment from the database.")
+        .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
+        
 
         var getTopFive = new SlashCommandBuilder()
         .WithName("get-top-five-comments")
         .WithDescription("Gets the top five comments of all time from the server.")
-        .AddOption("isephemeral", ApplicationCommandOptionType.Boolean,"Keep this post hidden?", isRequired:true);
+        .AddOption("isephemeral", ApplicationCommandOptionType.Boolean,"Keep this post hidden?", isRequired:false);
 
         var getUsersTopFive = new SlashCommandBuilder()
         .WithName("get-users-top-five-comments")
         .WithDescription("Gets a users top five comments.")
-        .AddOption("user", ApplicationCommandOptionType.User, "The user", isRequired: true);
+        .AddOption("user", ApplicationCommandOptionType.User, "The user", isRequired: true)
+        .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
+        
 
         var getTopTenUsersByVoteCount = new SlashCommandBuilder()
         .WithName("get-top-ten-users-by-vote-count")
-        .WithDescription("Gets the top ten users ordered by the sum of their vote counts.");
+        .WithDescription("Gets the top ten users ordered by the sum of their vote counts.")
+        .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
 
         var getTopTenUsersByPopstCount = new SlashCommandBuilder()
         .WithName("get-top-ten-users-by-post-count")
-        .WithDescription("Gets the top ten users ordered by the sum of their vote counts.");
+        .WithDescription("Gets the top ten users ordered by the sum of their vote counts.")
+        .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
 
         try
         {

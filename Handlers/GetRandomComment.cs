@@ -10,7 +10,9 @@ public class GetRandomComment
 {
     public static async Task HandleGetRandomComment(SocketSlashCommand command, HttpClient httpClient)
     {
-        await command.DeferAsync();
+        bool isEphemeral = ((bool?)command.Data.Options.First().Value) ?? true;
+
+        await command.DeferAsync(ephemeral: isEphemeral);
 
         List<Color> postColours = new()
         {

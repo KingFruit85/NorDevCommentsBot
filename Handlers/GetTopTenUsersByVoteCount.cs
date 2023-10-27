@@ -8,7 +8,9 @@ internal class GetTopTenUsersByVoteCount
 {
     internal static async Task HandleGetTopTenUsersByVoteCount(SocketSlashCommand command, HttpClient httpClient)
     {
-        await command.DeferAsync();
+        bool isEphemeral = ((bool?)command.Data.Options.First().Value) ?? true;
+
+        await command.DeferAsync(ephemeral: isEphemeral);
         try
 		{
             var response = await httpClient.GetFromJsonAsync<Dictionary<string, int>>("https://nordevcommentsbackend.fly.dev/api/messages/gettoptenusersbyvotecount");

@@ -9,7 +9,7 @@ public class GetTopFiveComments
 {
     public static async Task HandleGetTopFiveComments(SocketSlashCommand command, HttpClient httpClient)
     {
-        bool isEphemeral = (bool)command.Data.Options.First().Value;
+        bool isEphemeral = ((bool?)command.Data.Options.First().Value) ?? true;
 
         await command.DeferAsync(ephemeral: isEphemeral);
 
