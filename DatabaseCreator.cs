@@ -19,6 +19,7 @@ internal class DatabaseCreator
         {
             foreach (var message in response)
             {
+                Console.WriteLine($"Creating message : {message.messageLink}");
                 string[] messageLinkParts = message.messageLink!.Split('/');
                 ulong guildId = ulong.Parse(messageLinkParts[4]);
                 ulong channelId = ulong.Parse(messageLinkParts[5]);
@@ -26,6 +27,11 @@ internal class DatabaseCreator
                 var guild = client.GetGuild(guildId);
                 var originChannel = guild.GetTextChannel(channelId);
                 var nominatedMessage = await originChannel.GetMessageAsync(nominatedMessageId);
+
+                if (nominatedMessage is null)
+                {
+                    Console.WriteLine("nominated message is null!");
+                }
 
                 var nominatedMessageEmbedsAndAttachmentUrls = new List<string>();
 
@@ -38,23 +44,6 @@ internal class DatabaseCreator
                     nominatedMessageEmbedsAndAttachmentUrls.Add(attachment.Url);
                 }
 
-                IMessage? refedMessage = null;
-                var refedMessageEmbedsAndAttachmentUrls = new List<string>();
-
-                if (nominatedMessage is IUserMessage userMessage)
-                {
-                    refedMessage = userMessage.ReferencedMessage;
-
-                    foreach (var embed in refedMessage.Embeds)
-                    {
-                        refedMessageEmbedsAndAttachmentUrls.Add(embed.Url);
-                    }
-                    foreach (var attachment in refedMessage.Attachments)
-                    {
-                        refedMessageEmbedsAndAttachmentUrls.Add(attachment.Url);
-                    }
-                }
-
                 DiscordMessage messageToPersist = new ()
                 {
                     DateOfSubmission = nominatedMessage.Timestamp.DateTime,
@@ -64,18 +53,42 @@ internal class DatabaseCreator
                     NominatedMessageComment = nominatedMessage.Content,
                     NominatedMessageAuthorAvatarUrl = nominatedMessage.Author.GetAvatarUrl(),
                     NominatedMessageEmbedAndAttachmentUrls = nominatedMessageEmbedsAndAttachmentUrls,
-                    QuotedMessageMessageLink = refedMessage.GetJumpUrl() ?? null,
-                    QuotedMessageComment = refedMessage.Content ?? null,
-                    QuotedMessageAuthorUserName = refedMessage.Author.Username ?? null,
-                    QuotedMessageAvatarLink = refedMessage.Author.GetAvatarUrl() ?? null,
-                    QuotedMessageEmbedAndAttachmentUrls = refedMessageEmbedsAndAttachmentUrls ?? null,
-                    QuotedMessageAuthorDisplayname = (refedMessage.Author as IGuildUser)?.Nickname ?? refedMessage.Author.GlobalName,
+                    QuotedMessageMessageLink = null,
+                    QuotedMessageComment = null,
+                    QuotedMessageAuthorUserName = null,
+                    QuotedMessageAvatarLink = null,
+                    QuotedMessageEmbedAndAttachmentUrls = null,
+                    QuotedMessageAuthorDisplayname = null,
                     VoteCount = message.voteCount,
                     Voters = message.voters
                 };
 
-                // Save comment
+                if (nominatedMessage is IUserMessage userMessage && userMessage.ReferencedMessage is not null)
+                {
+                    IMessage? refedMessage = userMessage.ReferencedMessage;
+                    var refedMessageEmbedsAndAttachmentUrls = new List<string>();
 
+                    foreach (var embed in refedMessage.Embeds)
+                    {
+                        refedMessageEmbedsAndAttachmentUrls.Add(embed.Url);
+                    }
+                    foreach (var attachment in refedMessage.Attachments)
+                    {
+                        refedMessageEmbedsAndAttachmentUrls.Add(attachment.Url);
+                    }
+
+                    if (refedMessage is not null)
+                    {
+                        messageToPersist.QuotedMessageMessageLink = refedMessage.GetJumpUrl() ?? null;
+                        messageToPersist.QuotedMessageComment = refedMessage.Content ?? null;
+                        messageToPersist.QuotedMessageAuthorUserName = refedMessage.Author.Username ?? null;
+                        messageToPersist.QuotedMessageAvatarLink = refedMessage.Author.GetAvatarUrl() ?? null;
+                        messageToPersist.QuotedMessageEmbedAndAttachmentUrls = refedMessageEmbedsAndAttachmentUrls ?? null;
+                        messageToPersist.QuotedMessageAuthorDisplayname = (refedMessage.Author as IGuildUser)?.Nickname ?? refedMessage.Author.GlobalName;
+                    }
+                }
+
+                // Save comment
                 string apiUrl = "https://nordevcommentsbackend.fly.dev/api/messages/savenewcomment";
                 var data = JsonSerializer.Serialize(messageToPersist);
 
