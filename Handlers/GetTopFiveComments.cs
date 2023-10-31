@@ -14,7 +14,7 @@ public class GetTopTenComments
 
         await command.DeferAsync(ephemeral: isEphemeral);
 
-        await DatabaseCreator.BuildNewDatabase(httpClient, client); // REMOVE
+        //await DatabaseCreator.BuildNewDatabase(httpClient, client); // REMOVE
 
         // Post to the general channel if the nominated message didn't orginate in the general channel
         var channel = await command.GetChannelAsync() as ITextChannel;

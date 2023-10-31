@@ -27,5 +27,4 @@ C:\Users\Christopher\source\repos\NorDevBestOfBot\NorDevBestOfBot\obj\Debug\net7
 C:\Users\Christopher\source\repos\NorDevBestOfBot\NorDevBestOfBot\obj\Debug\net7.0\ref\NorDevBestOfBot.dll
 C:\Users\Christopher\source\repos\NorDevBestOfBot\NorDevBestOfBot\obj\Debug\net7.0\NorDevBestOfBot.Properties.Resources.resources
 C:\Users\Christopher\source\repos\NorDevBestOfBot\NorDevBestOfBot\obj\Debug\net7.0\NorDevBestOfBot.csproj.GenerateResource.cache
-C:\Users\Christopher\source\repos\NorDevBestOfBot\NorDevBestOfBot\bin\Debug\net7.0\token.txt
 C:\Users\Christopher\source\repos\NorDevBestOfBot\NorDevBestOfBot\bin\Debug\net7.0\Images\avatarNotFound.png
