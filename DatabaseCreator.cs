@@ -21,9 +21,9 @@ internal class DatabaseCreator
             {
                 Console.WriteLine($"Creating message : {message.messageLink}");
                 string[] messageLinkParts = message.messageLink!.Split('/');
-                ulong guildId = ulong.Parse(messageLinkParts[4]);
+                ulong guildId = ulong.Parse(message.serverId!);
                 ulong channelId = ulong.Parse(messageLinkParts[5]);
-                ulong nominatedMessageId = ulong.Parse(messageLinkParts[6]);
+                ulong nominatedMessageId = ulong.Parse(message.messageId!);
                 var guild = client.GetGuild(guildId);
                 var originChannel = guild.GetTextChannel(channelId);
                 var nominatedMessage = await originChannel.GetMessageAsync(nominatedMessageId);
