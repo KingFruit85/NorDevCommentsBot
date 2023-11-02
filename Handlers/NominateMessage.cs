@@ -70,7 +70,17 @@ internal class NominateMessage
         // Check if the message refrences another message, if it does we'll want to post that first
         if (refrencedMessage is not null)
         {
+
+            var refrencedMessageEmbed = new EmbedBuilder()
+            .WithAuthor(refrencedMessage.Author)
+            .WithDescription(refrencedMessage.Content)
+            .WithUrl(refMessageLink)
+            .Build();
+
+            embeds.Add(refrencedMessageEmbed);
+
             Console.WriteLine($"found {refrencedMessage.Attachments.Count} ref message attachments");
+
             foreach (var attachment in refrencedMessage.Attachments)
             {
                 if (attachment.Width.HasValue && attachment.Height.HasValue)
@@ -83,8 +93,6 @@ internal class NominateMessage
                 }
             }
 
-            // If a message has one image attachment it gets added as an embed, if there are multiple they 
-            // all get added as attachments, should probably refactor this away to a helper method
             Console.WriteLine($"found {refrencedMessage.Embeds.Count} ref message embeds");
             foreach (var embed in refrencedMessage.Embeds)
             {
@@ -97,15 +105,17 @@ internal class NominateMessage
                             .Build());
                 }
             }
+        }
 
-            var refrencedMessageEmbed = new EmbedBuilder()
-            .WithAuthor(refrencedMessage.Author)
-            .WithDescription(refrencedMessage.Content)
-            .WithUrl(refMessageLink)
+        // Create nominated message embed
+        Console.WriteLine($"Creating main embed for nominated message");
+        var nominatedMessageEmbed = new EmbedBuilder()
+            .WithAuthor(command.Data.Message.Author)
+            .WithDescription(command.Data.Message.Content)
+            .WithUrl (messageLink)
             .Build();
 
-            embeds.Add(refrencedMessageEmbed);
-        }
+        embeds.Add(nominatedMessageEmbed);
 
         Console.WriteLine($"found {message.Attachments.Count}  message attachments");
         foreach (var attachment in message.Attachments)
@@ -132,16 +142,6 @@ internal class NominateMessage
                         .Build());
             }
         }
-
-        // Create nominated message embed
-        Console.WriteLine($"Creating main embed for nominated message");
-        var nominatedMessageEmbed = new EmbedBuilder()
-            .WithAuthor(command.Data.Message.Author)
-            .WithDescription(command.Data.Message.Content)
-            .WithUrl (messageLink)
-            .Build();
-
-        embeds.Add(nominatedMessageEmbed);
 
         // Post to original channel
         var willCheck = command.User.Id == 136293146647724032 ? "The ACTUAL poo-poo head " : ""; // lol 💩
