@@ -11,7 +11,7 @@ internal class NominateMessage
         Console.WriteLine("Entered HandleNominateMessageAsync");
 
         Console.WriteLine("Checking if user nominated own message");
-        if (command.User.Id == command.Data.Message.Author.Id && command.User.Id != 317070992339894273)
+        if (command.User.Id == command.Data.Message.Author.Id)
         {
             var interactionUser = guild!.GetUser(command.User.Id);
             await command.FollowupAsync(text: Helpers.UserNominatingOwnComment(interactionUser), ephemeral: false);
@@ -134,6 +134,11 @@ internal class NominateMessage
                         .WithImageUrl(embed.Url)
                         .Build());
             }
+
+            else if (!embed.Image.HasValue)
+            {
+                embeds.Add((Embed)embed);
+            }
         }
 
         // Post to original channel
@@ -151,8 +156,9 @@ internal class NominateMessage
         // Post to the general channel if the nominated message didn't orginate in the general channel
         var generalChannel = client.GetChannel(GeneralChannelId) as ITextChannel;
         bool sendToGeneralChannel = true; // testing toggle, set to false to stop spamming lobby while testing in bottesting
+        bool IsChrisNominating = command.User.Id == 317070992339894273;
 
-        if (generalChannel is not null && command.Channel.Id != generalChannel.Id && sendToGeneralChannel)
+        if (!IsChrisNominating && generalChannel is not null && command.Channel.Id != generalChannel.Id && sendToGeneralChannel)
             {
                 var messageLinkButton = voteButtons
                     .WithButton(
