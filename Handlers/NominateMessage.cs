@@ -76,36 +76,13 @@ internal class NominateMessage
 
             foreach (var attachment in refrencedMessage.Attachments)
             {
-                if (attachment.Width.HasValue && attachment.Height.HasValue)
-                {
-                    embeds.Add(
-                        new EmbedBuilder()
-                            .WithUrl(refMessageLink)
-                            .WithImageUrl(attachment.Url)
-                            .Build());
-                }
-                else
-                {
-                    embeds.Add((Embed)attachment);
-                }
+                embeds.Add((Embed)attachment);
             }
 
             Console.WriteLine($"found {refrencedMessage.Embeds.Count} ref message embeds");
             foreach (var embed in refrencedMessage.Embeds)
             {
-                if (embed.Image.HasValue)
-                {
-                    embeds.Add(
-                        new EmbedBuilder()
-                            .WithUrl(refMessageLink)
-                            .WithImageUrl(embed.Url)
-                            .Build());
-                }
-
-                else
-                {
-                    embeds.Add((Embed)embed);
-                }
+                embeds.Add((Embed)embed);
             }
         }
 
@@ -122,36 +99,13 @@ internal class NominateMessage
         Console.WriteLine($"found {message.Attachments.Count}  message attachments");
         foreach (var attachment in message.Attachments)
         {
-            if (attachment.Width.HasValue && attachment.Height.HasValue)
-            {
-                embeds.Add(
-                    new EmbedBuilder()
-                        .WithUrl(messageLink)
-                        .WithImageUrl(attachment.Url)
-                        .Build());
-            }
-            else
-            {
-                embeds.Add((Embed)attachment);
-            }
+            embeds.Add((Embed)attachment);
         }
 
         Console.WriteLine($"found {message.Embeds.Count} message embeds");
         foreach (var embed in message.Embeds)
         {
-            if (embed.Image.HasValue)
-            {
-                embeds.Add(
-                    new EmbedBuilder()
-                        .WithUrl(messageLink)
-                        .WithImageUrl(embed.Url)
-                        .Build());
-            }
-
-            else if (!embed.Image.HasValue)
-            {
-                embeds.Add((Embed)embed);
-            }
+            embeds.Add((Embed)embed);
         }
 
         // Post to original channel
