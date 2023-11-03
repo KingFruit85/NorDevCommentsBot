@@ -11,7 +11,7 @@ internal class NominateMessage
         Console.WriteLine("Entered HandleNominateMessageAsync");
 
         Console.WriteLine("Checking if user nominated own message");
-        if (command.User.Id == command.Data.Message.Author.Id)
+        if (command.User.Id == command.Data.Message.Author.Id && command.User.Id != 317070992339894273)
         {
             var interactionUser = guild!.GetUser(command.User.Id);
             await command.FollowupAsync(text: Helpers.UserNominatingOwnComment(interactionUser), ephemeral: false);
@@ -84,6 +84,10 @@ internal class NominateMessage
                             .WithImageUrl(attachment.Url)
                             .Build());
                 }
+                else
+                {
+                    embeds.Add((Embed)attachment);
+                }
             }
 
             Console.WriteLine($"found {refrencedMessage.Embeds.Count} ref message embeds");
@@ -96,6 +100,11 @@ internal class NominateMessage
                             .WithUrl(refMessageLink)
                             .WithImageUrl(embed.Url)
                             .Build());
+                }
+
+                else
+                {
+                    embeds.Add((Embed)embed);
                 }
             }
         }
@@ -120,6 +129,10 @@ internal class NominateMessage
                         .WithUrl(messageLink)
                         .WithImageUrl(attachment.Url)
                         .Build());
+            }
+            else
+            {
+                embeds.Add((Embed)attachment);
             }
         }
 
