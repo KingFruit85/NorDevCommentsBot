@@ -104,7 +104,13 @@ internal class NominateMessage
             .Build();
 
         embeds.Add(nominatedMessageEmbed);
-        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(message));
+        var properties = message.GetType().GetProperties();
+
+        foreach (var property in properties)
+        {
+            var value = property.GetValue(message);
+            Console.WriteLine($"{property.Name}: {value}");
+        }
         Console.WriteLine($"found {message.Attachments.Count}  message attachments");
         foreach (var attachment in message.Attachments)
         {
