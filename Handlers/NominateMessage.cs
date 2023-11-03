@@ -97,7 +97,7 @@ internal class NominateMessage
 
         // Create nominated message embed
 
-        if (embeds.Any() && command.Data.Message.Content.Length != 0)
+        if (command.Data.Message.Content.Length != 0)
         {
             Console.WriteLine($"Creating main embed for nominated message");
             var nominatedMessageEmbed = new EmbedBuilder()
