@@ -10,13 +10,6 @@ internal class NominateMessage
     {
         Console.WriteLine("Entered HandleNominateMessageAsync");
 
-        Console.WriteLine("Checking if nominated message was created by a bot");
-        if (command.Data.Message.Author.IsBot)
-        {
-            await command.FollowupAsync(text: $"Sorry, you can't nominate a bot message", ephemeral: true);
-            return;
-        }
-
         Console.WriteLine("Checking if user nominated own message");
         if (command.User.Id == command.Data.Message.Author.Id && command.User.Id != 317070992339894273)
         {
