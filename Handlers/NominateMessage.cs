@@ -59,7 +59,7 @@ internal class NominateMessage
 
         // Create a list of embeds that we will include with the response
         List<Embed> embeds = new ();
-        
+        List<Attachment> attachments = new List<Attachment>();
         // Check if the message refrences another message, if it does we'll want to post that first
         if (refrencedMessage is not null)
         {
@@ -104,7 +104,7 @@ internal class NominateMessage
             .Build();
 
         embeds.Add(nominatedMessageEmbed);
-
+        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(message));
         Console.WriteLine($"found {message.Attachments.Count}  message attachments");
         foreach (var attachment in message.Attachments)
         {
