@@ -96,14 +96,19 @@ internal class NominateMessage
         }
 
         // Create nominated message embed
-        Console.WriteLine($"Creating main embed for nominated message");
-        var nominatedMessageEmbed = new EmbedBuilder()
-            .WithAuthor(command.Data.Message.Author)
-            .WithDescription(command.Data.Message.Content)
-            .WithUrl (messageLink)
-            .Build();
 
-        embeds.Add(nominatedMessageEmbed);
+        if (embeds.Any() && command.Data.Message.Content.Length != 0)
+        {
+            Console.WriteLine($"Creating main embed for nominated message");
+            var nominatedMessageEmbed = new EmbedBuilder()
+                .WithAuthor(command.Data.Message.Author)
+                .WithDescription(command.Data.Message.Content)
+                .WithUrl (messageLink)
+                .Build();
+            
+            embeds.Add(nominatedMessageEmbed);
+        }
+
         var properties = message.GetType().GetProperties();
 
         foreach (var property in properties)
