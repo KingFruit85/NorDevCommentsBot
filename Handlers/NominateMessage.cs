@@ -76,7 +76,15 @@ internal class NominateMessage
 
             foreach (var attachment in refrencedMessage.Attachments)
             {
-                embeds.Add((Embed)attachment);
+                Console.WriteLine(attachment.Url, attachment.ContentType, attachment.Description);
+                if (attachment.Width.HasValue && attachment.Height.HasValue)
+                {
+                    embeds.Add(
+                        new EmbedBuilder()
+                            .WithUrl(messageLink)
+                            .WithImageUrl(attachment.Url)
+                            .Build());
+                }
             }
 
             Console.WriteLine($"found {refrencedMessage.Embeds.Count} ref message embeds");
@@ -99,7 +107,16 @@ internal class NominateMessage
         Console.WriteLine($"found {message.Attachments.Count}  message attachments");
         foreach (var attachment in message.Attachments)
         {
-            embeds.Add((Embed)attachment);
+            Console.WriteLine(attachment.Url, attachment.ContentType, attachment.Description);
+
+            if (attachment.Width.HasValue && attachment.Height.HasValue)
+            {
+                embeds.Add(
+                    new EmbedBuilder()
+                        .WithUrl(messageLink)
+                        .WithImageUrl(attachment.Url)
+                        .Build());
+            }
         }
 
         Console.WriteLine($"found {message.Embeds.Count} message embeds");
