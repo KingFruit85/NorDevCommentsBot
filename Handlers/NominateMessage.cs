@@ -76,7 +76,8 @@ internal class NominateMessage
 
             foreach (var attachment in refrencedMessage.Attachments)
             {
-                Console.WriteLine(attachment.Url, attachment.ContentType, attachment.Description);
+                Console.WriteLine($"Attachemnt URL: {attachment.Url}, Attachemnt Content Type: {attachment.ContentType}, Attachment Description: {attachment.Description}");
+
                 if (attachment.Width.HasValue && attachment.Height.HasValue)
                 {
                     embeds.Add(
@@ -107,7 +108,7 @@ internal class NominateMessage
         Console.WriteLine($"found {message.Attachments.Count}  message attachments");
         foreach (var attachment in message.Attachments)
         {
-            Console.WriteLine(attachment.Url, attachment.ContentType, attachment.Description);
+            Console.WriteLine($"Attachemnt URL: {attachment.Url}, Attachemnt Content Type: {attachment.ContentType}, Attachment Description: {attachment.Description}");
 
             if (attachment.Width.HasValue && attachment.Height.HasValue)
             {

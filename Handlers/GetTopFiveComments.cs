@@ -127,11 +127,7 @@ public class GetTopTenComments
                     {
                         foreach (var embd in nominatedMessage.Embeds)
                         {
-                            var newEmbed = new EmbedBuilder()
-                                .WithUrl(nominatedMessage.GetJumpUrl())
-                                .WithImageUrl(embd.Url)
-                                .Build();
-                            embeds.Add(newEmbed);
+                            embeds.Add((Embed)embd);
                         }
 
                         foreach (var atchmt in nominatedMessage.Attachments)
