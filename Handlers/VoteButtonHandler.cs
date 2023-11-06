@@ -172,11 +172,14 @@ internal static class VoteButtonHandler
             var response = await httpClient.PostAsync(apiUrl, content);
             Console.WriteLine($"Response: {response}");
 
+            var voteComment = voteCount == 0 ? "zero votes 🎻" : $"{voteCount} vote";
+            var s = (voteCount == 1 || voteCount == -1) ? "" : "s";
+
             if (response.IsSuccessStatusCode)
             {
                 await component.FollowupAsync
                     (
-                        text: $"Thanks for voting!, {message.Author.Username}'s comment now has {voteCount} vote!", null, false, ephemeral: true, null, null, null, null
+                        text: $"Thanks for voting!, {message.Author.Username}'s comment now has {voteComment}{s}!", null, false, ephemeral: true, null, null, null, null
                     );
                     return false;
             }
