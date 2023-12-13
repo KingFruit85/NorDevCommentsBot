@@ -90,20 +90,19 @@ internal class NominateMessage
                     embeds.Add(newEmbed);
 
                 }
-
-                // Create nominated message embed
-
-                if (command.Data.Message.Content.Length != 0)
-        {
-            Console.WriteLine($"Creating main embed for nominated message");
-            var nominatedMessageEmbed = new EmbedBuilder()
-                .WithAuthor(command.Data.Message.Author)
-                .WithDescription(command.Data.Message.Content)
-                .WithUrl (messageLink)
-                .Build();
-            
-            embeds.Add(nominatedMessageEmbed);
+            }
         }
+
+        // Create nominated message embed
+
+        Console.WriteLine($"Creating main embed for nominated message");
+        var nominatedMessageEmbed = new EmbedBuilder()
+            .WithAuthor(command.Data.Message.Author)
+            .WithDescription(command.Data.Message.Content)
+            .WithUrl(messageLink)
+            .Build();
+
+        embeds.Add(nominatedMessageEmbed);
 
         var properties = message.GetType().GetProperties();
 
@@ -112,19 +111,20 @@ internal class NominateMessage
             var value = property.GetValue(message);
             Console.WriteLine($"{property.Name}: {value}");
         }
-        Console.WriteLine($"found {message.Attachments.Count}  message attachments");
 
         if (message.Embeds.Any() || message.Attachments.Any())
         {
+            Console.WriteLine($"found {message.Embeds.Count}  message embeds");
             foreach (var embd in message.Embeds)
             {
                 embeds.Add((Embed)embd);
             }
 
+            Console.WriteLine($"found {message.Attachments.Count}  message attachments");
             foreach (var atchmt in message.Attachments)
             {
                 var newEmbed = new EmbedBuilder()
-                    .WithUrl(message.GetJumpUrl())
+                    .WithUrl(messageLink)
                     .WithImageUrl(atchmt.Url)
                     .Build();
                 embeds.Add(newEmbed);
