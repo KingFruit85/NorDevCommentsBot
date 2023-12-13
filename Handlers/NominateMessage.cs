@@ -74,30 +74,26 @@ internal class NominateMessage
 
             Console.WriteLine($"found {refrencedMessage.Attachments.Count} ref message attachments");
 
-            foreach (var attachment in refrencedMessage.Attachments)
+            if (refrencedMessage.Embeds.Any() || refrencedMessage.Attachments.Any())
             {
-                Console.WriteLine($"Attachemnt URL: {attachment.Url}, Attachemnt Content Type: {attachment.ContentType}, Attachment Description: {attachment.Description}");
-
-                if (attachment.Width.HasValue && attachment.Height.HasValue)
+                foreach (var embd in refrencedMessage.Embeds)
                 {
-                    embeds.Add(
-                        new EmbedBuilder()
-                            .WithUrl(messageLink)
-                            .WithImageUrl(attachment.Url)
-                            .Build());
+                    embeds.Add((Embed)embd);
                 }
-            }
 
-            Console.WriteLine($"found {refrencedMessage.Embeds.Count} ref message embeds");
-            foreach (var embed in refrencedMessage.Embeds)
-            {
-                embeds.Add((Embed)embed);
-            }
-        }
+                foreach (var atchmt in refrencedMessage.Attachments)
+                {
+                    var newEmbed = new EmbedBuilder()
+                        .WithUrl(refrencedMessage.GetJumpUrl())
+                        .WithImageUrl(atchmt.Url)
+                        .Build();
+                    embeds.Add(newEmbed);
 
-        // Create nominated message embed
+                }
 
-        if (command.Data.Message.Content.Length != 0)
+                // Create nominated message embed
+
+                if (command.Data.Message.Content.Length != 0)
         {
             Console.WriteLine($"Creating main embed for nominated message");
             var nominatedMessageEmbed = new EmbedBuilder()
@@ -117,25 +113,24 @@ internal class NominateMessage
             Console.WriteLine($"{property.Name}: {value}");
         }
         Console.WriteLine($"found {message.Attachments.Count}  message attachments");
-        foreach (var attachment in message.Attachments)
-        {
-            Console.WriteLine($"Attachemnt URL: {attachment.Url}, Attachemnt Content Type: {attachment.ContentType}, Attachment Description: {attachment.Description}");
 
-            if (attachment.Width.HasValue && attachment.Height.HasValue)
+        if (message.Embeds.Any() || message.Attachments.Any())
+        {
+            foreach (var embd in message.Embeds)
             {
-                embeds.Add(
-                    new EmbedBuilder()
-                        .WithUrl(messageLink)
-                        .WithImageUrl(attachment.Url)
-                        .Build());
+                embeds.Add((Embed)embd);
+            }
+
+            foreach (var atchmt in message.Attachments)
+            {
+                var newEmbed = new EmbedBuilder()
+                    .WithUrl(message.GetJumpUrl())
+                    .WithImageUrl(atchmt.Url)
+                    .Build();
+                embeds.Add(newEmbed);
             }
         }
 
-        Console.WriteLine($"found {message.Embeds.Count} message embeds");
-        foreach (var embed in message.Embeds)
-        {
-            embeds.Add((Embed)embed);
-        }
 
         // Post to original channel
         var willCheck = command.User.Id == 136293146647724032 ? "The ACTUAL poo-poo head " : ""; // lol 💩
