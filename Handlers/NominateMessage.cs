@@ -72,19 +72,20 @@ internal class NominateMessage
 
             embeds.Add(refrencedMessageEmbed);
 
-            Console.WriteLine($"found {refrencedMessage.Attachments.Count} ref message attachments");
 
             if (refrencedMessage.Embeds.Any() || refrencedMessage.Attachments.Any())
             {
+                Console.WriteLine($"found {refrencedMessage.Embeds.Count} ref message embeds");
                 foreach (var embd in refrencedMessage.Embeds)
                 {
                     embeds.Add((Embed)embd);
                 }
 
+                Console.WriteLine($"found {refrencedMessage.Attachments.Count} ref message attachments");
                 foreach (var atchmt in refrencedMessage.Attachments)
                 {
                     var newEmbed = new EmbedBuilder()
-                        .WithUrl(refrencedMessage.GetJumpUrl())
+                        .WithUrl(refMessageLink)
                         .WithImageUrl(atchmt.Url)
                         .Build();
                     embeds.Add(newEmbed);
