@@ -59,7 +59,6 @@ internal class NominateMessage
 
         // Create a list of embeds that we will include with the response
         List<Embed> embeds = new ();
-        List<Attachment> attachments = new List<Attachment>();
         // Check if the message refrences another message, if it does we'll want to post that first
         if (refrencedMessage is not null)
         {
@@ -67,31 +66,30 @@ internal class NominateMessage
             var refrencedMessageEmbed = new EmbedBuilder()
             .WithAuthor(refrencedMessage.Author)
             .WithDescription(refrencedMessage.Content)
-            .WithUrl(refMessageLink)
-            .Build();
-
-            embeds.Add(refrencedMessageEmbed);
+            .WithUrl(refMessageLink);
 
 
-            if (refrencedMessage.Embeds.Any() || refrencedMessage.Attachments.Any())
+            var refEmbed = refrencedMessage.Embeds.FirstOrDefault();
+
+            if (refEmbed != null)
             {
-                Console.WriteLine($"found {refrencedMessage.Embeds.Count} ref message embeds");
-                foreach (var embd in refrencedMessage.Embeds)
+                if (refEmbed.Image.HasValue)
                 {
-                    embeds.Add((Embed)embd);
-                }
-
-                Console.WriteLine($"found {refrencedMessage.Attachments.Count} ref message attachments");
-                foreach (var atchmt in refrencedMessage.Attachments)
-                {
-                    var newEmbed = new EmbedBuilder()
-                        .WithUrl(refMessageLink)
-                        .WithImageUrl(atchmt.Url)
-                        .Build();
-                    embeds.Add(newEmbed);
-
+                    refrencedMessageEmbed.ImageUrl = refEmbed.Url;
                 }
             }
+
+            var refAttach = refrencedMessage.Attachments.FirstOrDefault();
+
+            if (refAttach != null)
+            {
+                if (refAttach.Width > 0 && refAttach.Height > 0)
+                {
+                    refrencedMessageEmbed.ImageUrl = refAttach.Url;
+                }
+            }
+
+            embeds.Add(refrencedMessageEmbed.Build());
         }
 
         // Create nominated message embed
@@ -100,38 +98,29 @@ internal class NominateMessage
         var nominatedMessageEmbed = new EmbedBuilder()
             .WithAuthor(command.Data.Message.Author)
             .WithDescription(command.Data.Message.Content)
-            .WithUrl(messageLink)
-            .Build();
+            .WithUrl(messageLink);
 
-        embeds.Add(nominatedMessageEmbed);
+        var embed = command.Data.Message.Embeds.FirstOrDefault();
 
-        var properties = message.GetType().GetProperties();
-
-        foreach (var property in properties)
+        if (embed != null)
         {
-            var value = property.GetValue(message);
-            Console.WriteLine($"{property.Name}: {value}");
-        }
-
-        if (message.Embeds.Any() || message.Attachments.Any())
-        {
-            Console.WriteLine($"found {message.Embeds.Count}  message embeds");
-            foreach (var embd in message.Embeds)
+            if (embed.Image.HasValue)
             {
-                embeds.Add((Embed)embd);
-            }
-
-            Console.WriteLine($"found {message.Attachments.Count}  message attachments");
-            foreach (var atchmt in message.Attachments)
-            {
-                var newEmbed = new EmbedBuilder()
-                    .WithUrl(messageLink)
-                    .WithImageUrl(atchmt.Url)
-                    .Build();
-                embeds.Add(newEmbed);
+                nominatedMessageEmbed.ImageUrl = embed.Url;
             }
         }
 
+        var attach = command.Data.Message.Attachments.FirstOrDefault();
+
+        if (attach != null)
+        {
+            if (attach.Width > 0 && attach.Height > 0)
+            {
+                nominatedMessageEmbed.ImageUrl = attach.Url;
+            }
+        }
+
+        embeds.Add(nominatedMessageEmbed.Build());
 
         // Post to original channel
         var willCheck = command.User.Id == 136293146647724032 ? "The ACTUAL poo-poo head " : ""; // lol 💩
