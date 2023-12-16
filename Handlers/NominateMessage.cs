@@ -68,28 +68,69 @@ internal class NominateMessage
             .WithDescription(refrencedMessage.Content)
             .WithUrl(refMessageLink);
 
-
-            var refEmbed = refrencedMessage.Embeds.FirstOrDefault();
-
-            if (refEmbed != null)
+            // if ther is just one image then just set the image url of the embed to the image url of the reffed message
+            if (refrencedMessage.Embeds != null && refrencedMessage.Embeds.Count == 1)
             {
-                if (refEmbed.Image.HasValue)
+                var refEmbed = refrencedMessage.Embeds.FirstOrDefault();
+
+                if (refEmbed != null)
                 {
-                    refrencedMessageEmbed.ImageUrl = refEmbed.Url;
+                    if (refEmbed.Image.HasValue)
+                    {
+                        refrencedMessageEmbed.ImageUrl = refEmbed.Url;
+                    }
                 }
             }
 
-            var refAttach = refrencedMessage.Attachments.FirstOrDefault();
-
-            if (refAttach != null)
+            // multiple image handling 
+            if (refrencedMessage.Embeds != null && refrencedMessage.Embeds.Count > 1)
             {
-                if (refAttach.Width > 0 && refAttach.Height > 0)
+                foreach (var e in refrencedMessage.Embeds)
                 {
-                    refrencedMessageEmbed.ImageUrl = refAttach.Url;
+                    var em = new EmbedBuilder()
+                        .WithUrl(refMessageLink)
+                        .WithImageUrl(e.Url)
+                        .Build();
+
+                    embeds.Add(em);
                 }
             }
 
-            embeds.Add(refrencedMessageEmbed.Build());
+            // same with attachments
+
+            if (refrencedMessage.Attachments != null && refrencedMessage.Attachments.Count == 1)
+            {
+                var refAttach = refrencedMessage.Attachments.FirstOrDefault();
+
+                if (refAttach != null)
+                {
+                    if (refAttach.Width > 0 && refAttach.Height > 0)
+                    {
+                        refrencedMessageEmbed.ImageUrl = refAttach.Url;
+                    }
+                }
+
+                embeds.Add(refrencedMessageEmbed.Build());
+            }
+
+            if (refrencedMessage.Attachments != null && refrencedMessage.Attachments.Count > 1)
+            {
+                foreach (var a in refrencedMessage.Attachments)
+                {
+                    if (a.Width > 0 && a.Height > 0)
+                    {
+                        var at = new EmbedBuilder()
+                            .WithUrl(refMessageLink)
+                            .WithImageUrl(a.Url)
+                            .Build();
+
+                        embeds.Add(at);
+                    }
+                }
+            }
+
+                embeds.Add(refrencedMessageEmbed.Build());
+
         }
 
         // Create nominated message embed
