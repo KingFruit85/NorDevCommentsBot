@@ -164,11 +164,10 @@ internal class NominateMessage
         embeds.Add(nominatedMessageEmbed.Build());
 
         // Post to original channel
-        var willCheck = command.User.Id == 136293146647724032 ? "The ACTUAL poo-poo head " : ""; // lol 💩
         Console.WriteLine("Posting message to channel message was nominated in");
 
         await command.FollowupAsync(
-                text: $"**{willCheck}{command.User.Mention}** has nominated **{command.Data.Message.Author.Mention}'s** message to be added to the best of list",
+                text: $"**The {Helpers.GetUserNameAdjective()} {command.User.Mention}** has nominated **{command.Data.Message.Author.Mention}'s** message to be added to the best of list",
                 components: voteButtons.Build(),
                 embeds: embeds.ToArray()
             );
