@@ -16,7 +16,7 @@ public class Program : IDisposable
         var _config = new DiscordSocketConfig 
         { 
             MessageCacheSize = 100 ,
-            GatewayIntents = GatewayIntents.AllUnprivileged ^ GatewayIntents.GuildScheduledEvents ^ GatewayIntents.GuildInvites ^ GatewayIntents.MessageContent
+            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildScheduledEvents | GatewayIntents.GuildInvites | GatewayIntents.MessageContent
         };
         DiscordClient = new DiscordSocketClient(_config);
 
