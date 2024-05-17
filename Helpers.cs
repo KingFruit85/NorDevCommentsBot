@@ -8,6 +8,110 @@ namespace NorDevBestOfBot;
 
 public class Helpers
 {
+
+    public static List<Embed> GetEmbedsAndattachments(IUserMessage message)
+    {
+        List<Embed> embeds = new();
+
+        if (message.Embeds is not null || message.Embeds?.Count > 0)
+        {
+            foreach (var embed in message.Embeds)
+            {
+                var em = new EmbedBuilder()
+                        .WithUrl(message.GetJumpUrl().Trim())
+                        .WithImageUrl(embed.Url)
+                        .Build();
+
+                embeds.Add(em);
+            }
+        }
+
+        if (message.Attachments != null && message.Attachments.Count > 0)
+        {
+            foreach (var attachment in message.Attachments)
+            {
+                if (attachment.Width > 0 && attachment.Height > 0)
+                {
+                    var at = new EmbedBuilder()
+                        .WithUrl(message.GetJumpUrl().Trim())
+                        .WithImageUrl(attachment.Url)
+                        .Build();
+
+                    embeds.Add(at);
+                }
+            }
+        }
+
+        return embeds;
+
+    }
+
+    public static string GetUserNameAdjective()
+    {
+        List<string> positiveAdjectives = new()
+        {
+            "Happy",
+            "Radiant",
+            "Joyful",
+            "Sunny",
+            "Brilliant",
+            "Gleaming",
+            "Sparkling",
+            "Vibrant",
+            "Lively",
+            "Cheerful",
+            "Breezy",
+            "Ecstatic",
+            "Blissful",
+            "Enchanting",
+            "Dazzling",
+            "Energetic",
+            "Spirited",
+            "Dynamic",
+            "Optimistic",
+            "Glorious",
+            "Exuberant",
+            "Shimmering",
+            "Buoyant",
+            "Vivid",
+            "Jubilant",
+            "Zesty",
+            "Playful",
+            "Resplendent",
+            "Glowing",
+            "Fantastic",
+            "Marvelous",
+            "Splendid",
+            "Fabulous",
+            "Wonderful",
+            "Magical",
+            "Amazing",
+            "Delightful",
+            "Charming",
+            "Enthusiastic",
+            "Radiant",
+            "Thriving",
+            "Sparkling",
+            "Charismatic",
+            "Invigorating",
+            "Captivating",
+            "Dynamic",
+            "Flourishing",
+            "Refreshing",
+            "Alluring",
+            "Captivating"
+        };
+
+        Random random = new();
+
+        int randomIndex = random.Next(positiveAdjectives.Count);
+
+        string randomAdjective = positiveAdjectives[randomIndex];
+
+        return randomAdjective;
+
+    }
+
     public static async Task<string> TryGetAvatarAsync(string url)
     {
         string avatarImage = "https://www.publicdomainpictures.net/pictures/40000/velka/question-mark.jpg";
@@ -115,7 +219,7 @@ public class Helpers
     {
         List<string> replies = new()
         {
-            $"Hey there, Nordeveans! 🌟 {user.Mention} just nominated a gem from {channel.Name} by {message.Author.Mention} for our 🏆best of list🏆. What's your take on it?",
+            $"Hey there, Nordevians! 🌟 {user.Mention} just nominated a gem from {channel.Name} by {message.Author.Mention} for our 🏆best of list🏆. What's your take on it?",
             $"Looks like {user.Mention} is on the prowl for greatness! They've nominated {message.Author.Mention}'s post in {channel.Name} for our 🏆best of list🏆. What's your verdict?",
             $"It's nomination time! 🏅 {user.Mention} thinks {message.Author.Mention}'s message in {channel.Name} deserves a spot in the 🏆best of list🏆. What's your say?",
             $"{user.Mention} is playing judge today! They've nominated {message.Author.Mention}'s post in {channel.Name} for our prestigious 🏆best of list🏆. Share your thoughts!",
@@ -125,7 +229,18 @@ public class Helpers
             $"It's nomination time, and {user.Mention} is leading the way! They've nominated {message.Author.Mention}'s post in {channel.Name} for the prestigious 🏆best of list🏆. What's your verdict?",
             $"🌠 {user.Mention} just nominated a message from {message.Author.Mention} over in {channel.Name}. Is it worthy of a place in the 🏆best of list🏆?",
             $"Big news! 📢 {user.Mention} has nominated a message by {message.Author.Mention} from {channel.Name} for our 🏆best of list🏆. What's your take on this nomination?",
+            $"{user.Mention} has spotlighted {message.Author.Mention}'s post in {channel.Name} as a potential champion for our 🏆best of list🏆. Share your thoughts!",
+            $"Attention all! 📣 {user.Mention} has nominated {message.Author.Mention}'s message in {channel.Name} for our esteemed 🏆best of list🏆. What's your verdict?",
+            $"🌟 {user.Mention} brings exciting news! They've nominated {message.Author.Mention}'s post in {channel.Name} for our distinguished 🏆best of list🏆. What do you think?",
+            $"{user.Mention} just ignited the nomination fire! They've put forward {message.Author.Mention}'s post in {channel.Name} for our coveted 🏆best of list🏆. Share your opinion!",
+            $"🔥 {user.Mention} believes {message.Author.Mention}'s message in {channel.Name} has the spark for our 🏆best of list🏆. What's your take on this nomination?",
+            $"{user.Mention} is raising the bar! They've selected {message.Author.Mention}'s post in {channel.Name} for potential inclusion in our 🏆best of list🏆. What's your verdict?",
+            $"✨ Big announcement! {user.Mention} has nominated {message.Author.Mention}'s message in {channel.Name} for our prestigious 🏆best of list🏆. What's your opinion?",
+            $"🏅 {user.Mention} just nominated a standout from {message.Author.Mention} in {channel.Name} for our coveted 🏆best of list🏆. What do you think?",
+            $"Breaking news! 📰 {user.Mention} has championed {message.Author.Mention}'s post in {channel.Name} for our renowned 🏆best of list🏆. Share your thoughts!",
+            $"{user.Mention} just proposed {message.Author.Mention}'s message in {channel.Name} as a contender for our esteemed 🏆best of list🏆. What's your verdict?"
         };
+
 
         Random r = new();
 

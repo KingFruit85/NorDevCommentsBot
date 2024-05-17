@@ -36,7 +36,7 @@ internal static class VoteButtonHandler
         if (persistedMessage is not null && persistedMessage.voters!.Contains(component.User.Username))
         {
             Console.WriteLine("message found in the database");
-            await component.FollowupAsync(text: $"You've already voted for this message!",ephemeral: true);
+            await component.FollowupAsync(text: $"You've already voted for this message!, it currently has ${persistedMessage.voteCount} votes",ephemeral: true);
             return false;
         }
 

@@ -175,7 +175,7 @@ public class GetTopTenComments
 
                 }
                     await command.FollowupAsync(
-                        text: "I hope you enjoyed reading though this month's comments as much as I did 🤗",
+                        text: "I hope you enjoyed reading though the server's top ten comments as much as I did 🤗",
                         ephemeral: true);
             }
         }
