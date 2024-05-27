@@ -14,10 +14,12 @@ public class GetThisMonthsComments
 
         await command.DeferAsync(ephemeral: isEphemeral);
 
-        // Post to the general channel if the nominated message didn't orginate in the general channel
         var channel = await command.GetChannelAsync() as ITextChannel;
+        await PostThisMonthsComments(channel, isEphemeral, httpClient, client);
+    }
 
-        // colours are a visual cue that two posts are related
+    public static async Task PostThisMonthsComments(ITextChannel? channel, bool isEphemeral, HttpClient httpClient, DiscordSocketClient client)
+    {
         List<Color> postColours = new()
         {
             new Color(244, 67, 54),   // #F44336 (Red)
@@ -43,8 +45,6 @@ public class GetThisMonthsComments
 
         int colourCounter = 0;
 
-        List<Embed> comments = new();
-
         try
         {
             var response = await httpClient.GetFromJsonAsync<List<Comment>>("https://nordevcommentsbackend.fly.dev/api/messages/getthismonthscomments");
@@ -52,7 +52,6 @@ public class GetThisMonthsComments
             {
                 foreach (var comment in response)
                 {
-
                     List<Embed> embeds = new();
                     string replyHint = string.Empty;
 
@@ -79,7 +78,7 @@ public class GetThisMonthsComments
                         string refAvatarUrl = refedMessage.Author.GetAvatarUrl();
 
                         var quotedMessage = new EmbedBuilder()
-                            .WithAuthor(name: refUserNickname, iconUrl:refAvatarUrl)
+                            .WithAuthor(name: refUserNickname, iconUrl: refAvatarUrl)
                             .WithDescription(refedMessage.Content)
                             .WithColor(postColours[colourCounter])
                             .WithUrl(refedMessage.GetJumpUrl());
@@ -157,26 +156,19 @@ public class GetThisMonthsComments
                             embeds: embeds.ToArray());
                     }
 
-                    // post just to user
-                    if (isEphemeral)
-                    {
-                        await command.FollowupAsync(
-                            components: linkButton.Build(),
-                            embeds: embeds.ToArray(),
-                            ephemeral: isEphemeral);
-                    }
                     colourCounter++;
 
                     if (colourCounter >= postColours.Count)
                     {
                         colourCounter = 0;
                     }
-
                 }
 
-                await command.FollowupAsync(
-                            text: "I hope you enjoyed reading though this month's comments as much as I did 🤗",
-                            ephemeral: true);
+                if (isEphemeral)
+                {
+                    await channel.SendMessageAsync(
+                        text: "I hope you enjoyed reading though this month's comments as much as I did 🤗");
+                }
             }
         }
         catch (Exception ex)

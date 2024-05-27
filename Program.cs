@@ -10,12 +10,14 @@ public class Program : IDisposable
     private static DiscordSocketClient? DiscordClient { get; set; }
     private static readonly HttpClient HttpClient = new();
     private static SocketGuild? Guild;
+    private static System.Timers.Timer? _monthlyMessageTimer;
+    private static readonly ulong _channelId = ulong.Parse(Environment.GetEnvironmentVariable("GeneralChannelId")!);
 
     public async Task MainAsync()
     {
-        var _config = new DiscordSocketConfig 
-        { 
-            MessageCacheSize = 100 ,
+        var _config = new DiscordSocketConfig
+        {
+            MessageCacheSize = 100,
             GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
         };
         DiscordClient = new DiscordSocketClient(_config);
@@ -24,7 +26,6 @@ public class Program : IDisposable
 
         var discordToken = Environment.GetEnvironmentVariable("DiscordToken");
 
-
         await DiscordClient.LoginAsync(TokenType.Bot, discordToken);
         await DiscordClient.StartAsync();
 
@@ -32,7 +33,6 @@ public class Program : IDisposable
         DiscordClient.Ready += Client_Ready;
         DiscordClient.SlashCommandExecuted += SlashCommandHandler;
         DiscordClient.MessageCommandExecuted += MessageCommandHandler;
-
         DiscordClient.ButtonExecuted += MyButtonHandler;
 
         // Block this task until the program is closed.
@@ -47,7 +47,6 @@ public class Program : IDisposable
 
     private async Task MessageUpdated(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
     {
-        // If the message was not in the cache, downloading it will result in getting a copy of `after`.
         var message = await before.GetOrDownloadAsync();
         Console.WriteLine($"{message} -> {after}");
     }
@@ -74,6 +73,9 @@ public class Program : IDisposable
 
         Guild = DiscordClient!.GetGuild(guildId);
 
+        // Initialize the monthly message timer
+        InitializeMonthlyMessageTimer();
+
         var nominate = new MessageCommandBuilder()
             .WithName("nominate-message");
 
@@ -81,12 +83,11 @@ public class Program : IDisposable
         .WithName("get-random-comment")
         .WithDescription("Gets a random comment from the database.")
         .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
-        
 
         var getTopTen = new SlashCommandBuilder()
         .WithName("get-top-ten-comments")
         .WithDescription("Gets the top ten comments of all time from the server.")
-        .AddOption("isephemeral", ApplicationCommandOptionType.Boolean,"Keep this post hidden?", isRequired:false);
+        .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
 
         var getThisMonthsComments = new SlashCommandBuilder()
         .WithName("get-this-months-comments")
@@ -98,14 +99,13 @@ public class Program : IDisposable
         .WithDescription("Gets a users top five comments.")
         .AddOption("user", ApplicationCommandOptionType.User, "The user", isRequired: true)
         .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
-        
 
         var getTopTenUsersByVoteCount = new SlashCommandBuilder()
         .WithName("get-top-ten-users-by-vote-count")
         .WithDescription("Gets the top ten users ordered by the sum of their vote counts.")
         .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
 
-        var getTopTenUsersByPopstCount = new SlashCommandBuilder()
+        var getTopTenUsersByPostCount = new SlashCommandBuilder()
         .WithName("get-top-ten-users-by-post-count")
         .WithDescription("Gets the top ten users ordered by the sum of their vote counts.")
         .AddOption("isephemeral", ApplicationCommandOptionType.Boolean, "Keep this post hidden?", isRequired: false);
@@ -120,7 +120,7 @@ public class Program : IDisposable
                     getThisMonthsComments.Build(),
                     getUsersTopFive.Build(),
                     getTopTenUsersByVoteCount.Build(),
-                    getTopTenUsersByPopstCount.Build(),
+                    getTopTenUsersByPostCount.Build(),
                     nominate.Build(),
                 });
             Console.WriteLine("Finished Commands");
@@ -130,6 +130,44 @@ public class Program : IDisposable
             var json = JsonConvert.SerializeObject(exception.Errors, Formatting.Indented);
             Console.WriteLine(json);
         }
+    }
+
+    private static void InitializeMonthlyMessageTimer()
+    {
+        _monthlyMessageTimer = new System.Timers.Timer();
+        _monthlyMessageTimer.Interval = GetNextMonthlyInterval();
+        _monthlyMessageTimer.Elapsed += async (sender, e) => await OnMonthlyMessageTimerElapsed();
+        _monthlyMessageTimer.AutoReset = false;
+        _monthlyMessageTimer.Start();
+    }
+
+    private static async Task OnMonthlyMessageTimerElapsed()
+    {
+        if (DiscordClient == null || Guild == null)
+        {
+            Console.WriteLine("Discord client or guild not initialized.");
+            return;
+        }
+
+        var channel = Guild.GetTextChannel(_channelId);
+        if (channel != null)
+        {
+            await GetThisMonthsComments.PostThisMonthsComments(channel, isEphemeral: false, HttpClient, DiscordClient);
+        }
+
+        // Reschedule the timer
+        _monthlyMessageTimer.Interval = GetNextMonthlyInterval();
+        _monthlyMessageTimer.Start();
+    }
+
+    private static double GetNextMonthlyInterval()
+    {
+        var now = DateTime.Now;
+        var firstDayOfNextMonth = new DateTime(now.Year, now.Month, 1).AddMonths(1);
+        var lastDayOfCurrentMonth = firstDayOfNextMonth.AddDays(-1);
+        var nextInterval = lastDayOfCurrentMonth.Date - now.Date;
+
+        return nextInterval.TotalMilliseconds;
     }
 
     private async Task SlashCommandHandler(SocketSlashCommand command)
@@ -173,7 +211,6 @@ public class Program : IDisposable
                 try
                 {
                     await NominateMessage.HandleNominateMessageAsync(command, DiscordClient!, HttpClient, Guild);
-
                 }
                 catch (Exception ex)
                 {
@@ -193,7 +230,6 @@ public class Program : IDisposable
 
         Console.WriteLine("Exiting MessageCommandHandler");
     }
-
 
     public static async Task MyButtonHandler(SocketMessageComponent component)
     {
