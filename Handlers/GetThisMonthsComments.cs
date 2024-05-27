@@ -15,10 +15,15 @@ public class GetThisMonthsComments
         await command.DeferAsync(ephemeral: isEphemeral);
 
         var channel = await command.GetChannelAsync() as ITextChannel;
-        await PostThisMonthsComments(channel, isEphemeral, httpClient, client);
+
+        await PostThisMonthsComments(channel, isEphemeral, httpClient, client, command);
+
+        await command.FollowupAsync(
+                                text: "I hope you enjoyed reading though this month's comments as much as I did 🤗",
+                                ephemeral: isEphemeral);
     }
 
-    public static async Task PostThisMonthsComments(ITextChannel? channel, bool isEphemeral, HttpClient httpClient, DiscordSocketClient client)
+    public static async Task PostThisMonthsComments(ITextChannel? channel, bool isEphemeral, HttpClient httpClient, DiscordSocketClient client, SocketSlashCommand? command = null)
     {
         List<Color> postColours = new()
         {
@@ -140,7 +145,6 @@ public class GetThisMonthsComments
                         }
                     }
 
-                    // post
                     var linkButton = new ComponentBuilder()
                         .WithButton(
                             label: "Take me to the post 📫",
@@ -148,8 +152,20 @@ public class GetThisMonthsComments
                             style: ButtonStyle.Link,
                             row: 0);
 
-                    // Post for everyone to see
-                    if (!isEphemeral)
+
+
+                    // if triggered by slash command
+                    if (command != null)
+                    {
+                        await command.FollowupAsync(
+                                components: linkButton.Build(),
+                                embeds: embeds.ToArray(),
+                                ephemeral: isEphemeral);
+                    }
+
+                    // if triggered by scheduled task
+
+                    if (command == null) 
                     {
                         await channel!.SendMessageAsync(
                             components: linkButton.Build(),
@@ -164,10 +180,10 @@ public class GetThisMonthsComments
                     }
                 }
 
-                if (isEphemeral)
+                if (command == null)
                 {
-                    await channel.SendMessageAsync(
-                        text: "I hope you enjoyed reading though this month's comments as much as I did 🤗");
+                    await channel!.SendMessageAsync(
+                    text: "I hope you enjoyed reading though this month's comments as much as I did 🤗");
                 }
             }
         }
