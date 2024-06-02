@@ -58,9 +58,9 @@ internal class NominateMessage
                 style: ButtonStyle.Danger,
                 row: 0)
             .WithButton(
-                label: "ℹ️",
+                label: "ℹ️ - What's this?",
                 customId: $"info - {nominatedMessageLink}",
-                style: ButtonStyle.Secondary,
+                style: ButtonStyle.Primary,
                 row: 0);
 
         // Create a list of embeds that we will include with the response
