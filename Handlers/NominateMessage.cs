@@ -56,6 +56,11 @@ internal class NominateMessage
                 label: "I Disagree 💩",
                 customId: $"no - {nominatedMessageLink}",
                 style: ButtonStyle.Danger,
+                row: 0)
+            .WithButton(
+                label: "ℹ️",
+                customId: $"info - {nominatedMessageLink}",
+                style: ButtonStyle.Secondary,
                 row: 0);
 
         // Create a list of embeds that we will include with the response

@@ -31,6 +31,14 @@ internal static class VoteButtonHandler
         var channel = server.GetTextChannel(ulong.Parse(channelId));
         var message = await channel.GetMessageAsync(ulong.Parse(messageId));
 
+        if (buttonChoice == "info") 
+        {
+            await component
+                .FollowupAsync(
+                text: "You can nominate a message to be added to the best of list by right clicking on the message, then selecting Apps -> nominate-message", 
+                ephemeral: true);
+        }
+
         Comment? persistedMessage = await Helpers.CheckIfMessageAlreadyPersistedAsync(messageLink.Trim(), httpClient);
         
         if (persistedMessage is not null && persistedMessage.voters!.Contains(component.User.Username))
