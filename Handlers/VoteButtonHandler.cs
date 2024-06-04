@@ -1,16 +1,14 @@
-﻿using Discord;
+﻿using System.Text;
+using System.Text.Json;
+using Discord;
 using Discord.WebSocket;
 using NorDevBestOfBot.Models;
-using System.Text;
-using System.Text.Json;
 
 namespace NorDevBestOfBot.Handlers;
 
 internal static class VoteButtonHandler
 {
-    public static async Task<bool> Vote(
-        DiscordSocketClient client, 
-        SocketMessageComponent component, 
+    public static async Task<bool> Vote(DiscordSocketClient client, SocketMessageComponent component,
         HttpClient httpClient)
     {
         await component.DeferAsync();
@@ -19,13 +17,13 @@ internal static class VoteButtonHandler
         var buttonChoice = buttonId[0].TrimEnd();
         var messageLink = buttonId[1];
 
-        string[] parts = messageLink.Split('/');
+        var parts = messageLink.Split('/');
 
         // Extract the IDs
-        string serverId = parts[4];
-        string channelId = parts[5];
-        string messageId = parts[6];
-        int voteCount = (buttonChoice == "yes") ? 1 : -1;
+        var serverId = parts[4];
+        var channelId = parts[5];
+        var messageId = parts[6];
+        var voteCount = buttonChoice == "yes" ? 1 : -1;
 
         var server = client.GetGuild(ulong.Parse(serverId));
         var channel = server.GetTextChannel(ulong.Parse(channelId));
@@ -35,32 +33,35 @@ internal static class VoteButtonHandler
         {
             await component
                 .FollowupAsync(
-                text: "You can nominate a message to be added to the best of list by right clicking on the message, then selecting Apps -> nominate-message", 
-                ephemeral: true);
+                    "You can nominate a message to be added to the best of list by right clicking on the message, then selecting Apps -> nominate-message",
+                    ephemeral: true);
 
             return false;
         }
 
-        Comment? persistedMessage = await Helpers.CheckIfMessageAlreadyPersistedAsync(messageLink.Trim(), httpClient);
-        
+        var persistedMessage = await Helpers.CheckIfMessageAlreadyPersistedAsync(messageLink.Trim(), httpClient);
+
         if (persistedMessage is not null && persistedMessage.voters!.Contains(component.User.Username))
         {
             Console.WriteLine("message found in the database");
-            await component.FollowupAsync(text: $"You've already voted for this message!, it currently has {persistedMessage.voteCount} votes",ephemeral: true);
+            await component.FollowupAsync(
+                $"You've already voted for this message!, it currently has {persistedMessage.voteCount} votes",
+                ephemeral: true);
             return false;
         }
 
         // Message has already been persisted, just adjust the vote count and add the voter
         if (persistedMessage is not null && !persistedMessage.voters!.Contains(component.User.Username))
         {
-            bool votedYes = buttonChoice == "yes";
+            var votedYes = buttonChoice == "yes";
 
             try
             {
                 Console.WriteLine("preparing message to POST");
 
-                string url = "https://nordevcommentsbackend.fly.dev/api/messages/addvotetomessage";
-                string parameters = $"?messageLink={Uri.EscapeDataString(messageLink.Trim())}&username={Uri.EscapeDataString(component.User.Username)}&votedYes={votedYes}";
+                var url = "https://nordevcommentsbackend.fly.dev/api/messages/addvotetomessage";
+                var parameters =
+                    $"?messageLink={Uri.EscapeDataString(messageLink.Trim())}&username={Uri.EscapeDataString(component.User.Username)}&votedYes={votedYes}";
 
                 Console.WriteLine("sending addvotetomessage POST");
                 Console.WriteLine($"Request: {url}{parameters}");
@@ -70,37 +71,37 @@ internal static class VoteButtonHandler
                 {
                     Console.WriteLine("addvotetomessage Success");
 
-                    string multipleVotes = persistedMessage.voteCount + voteCount > 1 ? "s" : "";
+                    var multipleVotes = persistedMessage.voteCount + voteCount > 1 ? "s" : "";
 
                     await component.FollowupAsync
                     (
-                        text: $"Thanks for voting!, {message.Author.Username}'s comment now has {persistedMessage.voteCount + voteCount} vote{multipleVotes}!", null, false, ephemeral: true, null, null, null, null
+                        $"Thanks for voting!, {message.Author.Username}'s comment now has {persistedMessage.voteCount + voteCount} vote{multipleVotes}!",
+                        null, false, true
                     );
                     return true;
                 }
-                else
-                {
-                    Console.WriteLine($"something went wrong Request message: {response.RequestMessage}, headers: {response.Content.Headers}");
-                    await component.FollowupAsync(text: $"Opps something isn't working correctly! {response.StatusCode} - {response.ReasonPhrase} - {response.Content.Headers}");
-                    return false;
-                }
 
+                Console.WriteLine(
+                    $"something went wrong Request message: {response.RequestMessage}, headers: {response.Content.Headers}");
+                await component.FollowupAsync(
+                    $"Opps something isn't working correctly! {response.StatusCode} - {response.ReasonPhrase} - {response.Content.Headers}");
+                return false;
             }
             catch (Exception ex)
             {
-                await component.FollowupAsync(text: $"Something unexpected happened: {ex.Message}");
+                await component.FollowupAsync($"Something unexpected happened: {ex.Message}");
                 return true;
             }
         }
 
         // If first time voted on
-        var comment = new Comment()
+        var comment = new Comment
         {
             messageLink = messageLink.Trim(),
             messageId = messageId,
             serverId = serverId,
             userName = message.Author.Username,
-            userTag  = message.Author.Username,
+            userTag = message.Author.Username,
             comment = message.Content,
             voteCount = voteCount,
             iconUrl = message.Author.GetAvatarUrl(),
@@ -121,20 +122,11 @@ internal static class VoteButtonHandler
 
         if (message.Attachments.Count > 0 || message.Embeds.Count > 0)
         {
-            foreach (var attachment in message.Attachments)
-            {
-                attachmentUrls.Add(attachment.Url);
-            }
+            foreach (var attachment in message.Attachments) attachmentUrls.Add(attachment.Url);
 
-            foreach (var embed in message.Embeds)
-            {
-                attachmentUrls.Add(embed.Url);
-            }
+            foreach (var embed in message.Embeds) attachmentUrls.Add(embed.Url);
 
-            if (attachmentUrls.Any())
-            {
-                comment.imageUrl = string.Join(",", attachmentUrls);
-            }
+            if (attachmentUrls.Any()) comment.imageUrl = string.Join(",", attachmentUrls);
         }
 
         // Do the same if the message refs another message
@@ -144,7 +136,6 @@ internal static class VoteButtonHandler
 
             if (refrencedMessage != null)
             {
-
                 comment.quotedMessage = refrencedMessage.Content;
                 comment.quotedMessageAuthor = refrencedMessage.Author.Username;
                 comment.quotedMessageAvatarLink = refrencedMessage.Author.GetAvatarUrl();
@@ -156,23 +147,17 @@ internal static class VoteButtonHandler
                 if (refrencedMessage.Attachments.Count > 0 || refrencedMessage.Embeds.Count > 0)
                 {
                     foreach (var attachment in refrencedMessage.Attachments)
-                    {
                         quotedMessageAttachmentUrls.Add(attachment.Url);
-                    }
 
-                    foreach (var embed in refrencedMessage.Embeds)
-                    {
-                        quotedMessageAttachmentUrls.Add(embed.Url);
-                    }
+                    foreach (var embed in refrencedMessage.Embeds) quotedMessageAttachmentUrls.Add(embed.Url);
 
                     if (quotedMessageAttachmentUrls.Any())
-                    {
                         comment.quotedMessageImage = string.Join(",", quotedMessageAttachmentUrls);
-                    }
                 }
             }
         }
-        string apiUrl = "https://nordevcommentsbackend.fly.dev/api/messages/savecomment";
+
+        var apiUrl = "https://nordevcommentsbackend.fly.dev/api/messages/savecomment";
         var data = JsonSerializer.Serialize(comment);
 
         try
@@ -183,28 +168,28 @@ internal static class VoteButtonHandler
             Console.WriteLine($"Response: {response}");
 
             var voteComment = voteCount == 0 ? "zero votes 🎻" : $"{voteCount} vote";
-            var s = (voteCount == 1 || voteCount == -1) ? "" : "s";
+            var s = voteCount == 1 || voteCount == -1 ? "" : "s";
 
             if (response.IsSuccessStatusCode)
             {
                 await component.FollowupAsync
-                    (
-                        text: $"Thanks for voting!, {message.Author.Username}'s comment now has {voteComment}{s}!", null, false, ephemeral: true, null, null, null, null
-                    );
-                    return false;
-            }
-            else
-            {
-                Console.WriteLine($"POST request failed with status code: {response.StatusCode}");
-                await component.FollowupAsync(text: $"Something unexpected happened!, Chris isn't very good at this is he?");
+                (
+                    $"Thanks for voting!, {message.Author.Username}'s comment now has {voteComment}{s}!", null, false,
+                    true
+                );
                 return false;
             }
+
+            Console.WriteLine($"POST request failed with status code: {response.StatusCode}");
+            await component.FollowupAsync("Something unexpected happened!, Chris isn't very good at this is he?");
+            return false;
         }
-        catch (Exception ex )
+        catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
-            await component.FollowupAsync(text: $"Something unexpected happened!, Chris isn't very good at this is he?");
+            await component.FollowupAsync("Something unexpected happened!, Chris isn't very good at this is he?");
         }
+
         return true;
     }
 }

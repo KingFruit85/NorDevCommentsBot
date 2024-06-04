@@ -1,5 +1,4 @@
-﻿
-namespace NorDevBestOfBot.Models;
+﻿namespace NorDevBestOfBot.Models;
 
 public class DiscordMessage
 {
@@ -10,7 +9,7 @@ public class DiscordMessage
     public string? NominatedMessageComment { get; set; }
     public string? NominatedMessageAuthorAvatarUrl { get; set; }
     public List<string>? NominatedMessageEmbedAndAttachmentUrls { get; set; }
-    public string? QuotedMessageMessageLink {  get; set; }
+    public string? QuotedMessageMessageLink { get; set; }
     public string? QuotedMessageComment { get; set; }
     public string? QuotedMessageAuthorUserName { get; set; }
     public string? QuotedMessageAvatarLink { get; set; }
