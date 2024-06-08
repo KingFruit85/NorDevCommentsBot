@@ -1,12 +1,13 @@
 using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using NorDevBestOfBot.Builders;
 using NorDevBestOfBot.Extensions;
 using NorDevBestOfBot.Services;
 
-namespace NorDevBestOfBot.SlashCommands;
+namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class GetRandomComment : InteractionModuleBase<SocketInteractionContext>
+public class GetRandomComment : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     private readonly ApiService _apiService;
     private readonly ILogger<GetRandomComment> _logger;

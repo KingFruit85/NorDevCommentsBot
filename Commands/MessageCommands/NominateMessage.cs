@@ -1,34 +1,45 @@
-﻿using Discord;
+using Discord;
+using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.Extensions.Options;
+using NorDevBestOfBot.Models.Options;
+using NorDevBestOfBot.Services;
 
-namespace NorDevBestOfBot.Handlers;
+namespace NorDevBestOfBot.Commands.MessageCommands;
 
-internal class NominateMessage
+public class NominateMessage : InteractionModuleBase<SocketInteractionContext<SocketMessageCommand>>
 {
-    public static async Task HandleNominateMessageAsync(SocketMessageCommand command, DiscordSocketClient client,
-        HttpClient httpClient, SocketGuild? guild)
+    private readonly ApiService _apiService;
+    private readonly IOptions<ServerOptions> _serverOptions;
+
+    public NominateMessage(ApiService apiService, IOptions<ServerOptions> serverOptions)
+    {
+        _apiService = apiService;
+        _serverOptions = serverOptions;
+    }
+
+    [MessageCommand("nominate-message")]
+    public async Task Handle(IMessage msg)
     {
         Console.WriteLine("Entered HandleNominateMessageAsync");
+        await DeferAsync();
 
         Console.WriteLine("Checking if user nominated own message");
-        if (command.User.Id == command.Data.Message.Author.Id && command.User.Id != 317070992339894273)
+        if (Context.Interaction.User.Id == msg.Author.Id && Context.Interaction.User.Id != 317070992339894273)
         {
-            var interactionUser = guild!.GetUser(command.User.Id);
-            await command.FollowupAsync(Helpers.UserNominatingOwnComment(interactionUser), ephemeral: false);
+            var interactionUser = Context.Guild!.GetUser(Context.Interaction.User.Id);
+            await FollowupAsync(Helpers.UserNominatingOwnComment(interactionUser), ephemeral: false);
             return;
         }
 
-        var server = client.GetGuild(command.GuildId!.Value);
-        var channel = server.GetTextChannel(command.ChannelId!.Value);
-        var nominatedMessage = await channel.GetMessageAsync(command.Data.Message.Id); // <-- here
-        Console.WriteLine($"got message {nominatedMessage.Id} - {nominatedMessage.Content}");
+        Console.WriteLine($@"got message {msg.Id} - {msg.Content}");
         var refMessageLink = string.Empty;
         IUserMessage? refrencedMessage = null;
 
         // Have to cast here to get the ReferencedMessage
-        if (nominatedMessage is IUserMessage userMessage)
+        if (msg is IUserMessage userMessage)
         {
-            Console.WriteLine("Message is IUserMessage");
+            Console.WriteLine(@"Message is IUserMessage");
             if (userMessage.ReferencedMessage is not null)
             {
                 refrencedMessage = userMessage.ReferencedMessage;
@@ -36,33 +47,31 @@ internal class NominateMessage
             }
         }
 
-        var nominatedMessageLink = nominatedMessage.GetJumpUrl().Trim();
+        var nominatedMessageLink = msg.GetJumpUrl().Trim();
 
-        var MessageAlreadyPersisted =
-            await Helpers.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink, httpClient);
+        var messageAlreadyPersisted =
+            await _apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink);
 
-        if (MessageAlreadyPersisted is not null)
+        if (messageAlreadyPersisted is not null)
         {
-            await command.FollowupAsync("This message has already been added to the best of list", ephemeral: true);
+            await FollowupAsync("This message has already been added to the best of list", ephemeral: true);
             return;
         }
 
         var voteButtons = new ComponentBuilder()
             .WithButton(
                 "I Agree 👍🏻",
-                $"yes - {nominatedMessageLink}",
+                "vote_button_true",
                 ButtonStyle.Success,
                 row: 0)
             .WithButton(
                 "I Disagree 💩",
-                $"no - {nominatedMessageLink}",
+                "vote_button_false",
                 ButtonStyle.Danger,
                 row: 0)
             .WithButton(
                 "ℹ️ - What's this?",
-                $"info - {nominatedMessageLink}",
-                ButtonStyle.Primary,
-                row: 0);
+                "info_button");
 
         // Create a list of embeds that we will include with the response
         List<Embed> embeds = new();
@@ -135,21 +144,21 @@ internal class NominateMessage
         // Create nominated message embed
         Console.WriteLine("Creating main embed for nominated message");
         Console.WriteLine(
-            $"The message has {nominatedMessage.Embeds.Count} embeds and {nominatedMessage.Attachments.Count} attachments");
+            $"The message has {msg.Embeds.Count} embeds and {msg.Attachments.Count} attachments");
         var nominatedMessageEmbed = new EmbedBuilder()
-            .WithAuthor(nominatedMessage.Author)
-            .WithDescription(nominatedMessage.Content)
+            .WithAuthor(msg.Author)
+            .WithDescription(msg.Content)
             .WithUrl(nominatedMessageLink);
 
-        if (!nominatedMessage.Embeds.Any() || !nominatedMessage.Attachments.Any())
+        if (!msg.Embeds.Any() || !msg.Attachments.Any())
         {
             Console.WriteLine("found no embeds or attachments");
             embeds.Add(nominatedMessageEmbed.Build());
         }
 
-        if (nominatedMessage.Embeds.Count == 1 || nominatedMessage.Attachments.Count == 1)
+        if (msg.Embeds.Count == 1 || msg.Attachments.Count == 1)
         {
-            var embed = nominatedMessage.Embeds.FirstOrDefault();
+            var embed = msg.Embeds.FirstOrDefault();
             var e = nominatedMessageEmbed;
             if (embed is not null && embed!.Image.HasValue)
             {
@@ -158,7 +167,7 @@ internal class NominateMessage
                 embeds.Add(e.Build());
             }
 
-            var attachment = nominatedMessage.Attachments.FirstOrDefault();
+            var attachment = msg.Attachments.FirstOrDefault();
 
             if (attachment is not null && attachment.Width > 0 && attachment.Height > 0)
             {
@@ -169,12 +178,12 @@ internal class NominateMessage
             }
         }
 
-        if (nominatedMessage.Embeds.Count > 1 || nominatedMessage.Attachments.Count > 1)
+        if (msg.Embeds.Count > 1 || msg.Attachments.Count > 1)
         {
-            if (nominatedMessage.Embeds is not null)
+            if (msg.Embeds is not null)
             {
-                Console.WriteLine($"found {nominatedMessage.Embeds.Count} embeds");
-                foreach (var embed in nominatedMessage.Embeds)
+                Console.WriteLine($@"found {msg.Embeds.Count} embeds");
+                foreach (var embed in msg.Embeds)
                     if (embed!.Image.HasValue)
                     {
                         var em = new EmbedBuilder()
@@ -186,10 +195,10 @@ internal class NominateMessage
                     }
             }
 
-            if (nominatedMessage.Attachments is not null)
+            if (msg.Attachments is not null)
             {
-                Console.WriteLine($"found {nominatedMessage.Attachments.Count} attachments");
-                foreach (var attachment in nominatedMessage.Attachments)
+                Console.WriteLine($"found {msg.Attachments.Count} attachments");
+                foreach (var attachment in msg.Attachments)
                     if (attachment.Width > 0 && attachment.Height > 0)
                     {
                         var e = nominatedMessageEmbed;
@@ -203,20 +212,20 @@ internal class NominateMessage
         // Post to original channel
         Console.WriteLine("Posting message to channel message was nominated in");
 
-        await command.FollowupAsync(
-            $"**The {Helpers.GetUserNameAdjective()} {command.User.Mention}** has nominated **{command.Data.Message.Author.Mention}'s** message to be added to the best of list",
+        await FollowupAsync(
+            $"**The {Helpers.GetUserNameAdjective()} {Context.Interaction.User.Mention}** has nominated **{msg.Author.Mention}'s** message to be added to the best of list",
             components: voteButtons.Build(),
             embeds: embeds.ToArray()
         );
 
-        var GeneralChannelId = ulong.Parse(Environment.GetEnvironmentVariable("GeneralChannelId")!);
+        var generalChannelId = _serverOptions.Value.ChannelId;
 
         // Post to the general channel if the nominated message didn't orginate in the general channel
-        var generalChannel = client.GetChannel(GeneralChannelId) as ITextChannel;
+        var generalChannel = Context.Client.GetChannel(generalChannelId) as ITextChannel;
         var sendToGeneralChannel =
             true; // testing toggle, set to false to stop spamming lobby while testing in bottesting
 
-        if (generalChannel is not null && command.Channel.Id != generalChannel.Id && sendToGeneralChannel)
+        if (generalChannel is not null && Context.Channel.Id != generalChannel.Id && sendToGeneralChannel)
         {
             var messageLinkButton = voteButtons
                 .WithButton(
@@ -226,8 +235,9 @@ internal class NominateMessage
                     row: 1);
             Console.WriteLine("Posting message to Lobby");
 
-            await generalChannel!.SendMessageAsync(
-                Helpers.GeneralChannelGreeting(command.Channel, command.User, command.Data.Message),
+            await generalChannel.SendMessageAsync(
+                Helpers.GeneralChannelGreeting(Context.Interaction.Channel, Context.Interaction.User,
+                    msg),
                 allowedMentions: AllowedMentions.All,
                 components: messageLinkButton.Build(),
                 embeds: embeds.ToArray());

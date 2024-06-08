@@ -1,10 +1,11 @@
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using NorDevBestOfBot.Services;
 
-namespace NorDevBestOfBot.SlashCommands;
+namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class GetTopTenUsersByVoteCount : InteractionModuleBase<SocketInteractionContext>
+public class GetTopTenUsersByVoteCount : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     private readonly ApiService _apiService;
 

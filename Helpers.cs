@@ -1,8 +1,5 @@
-﻿using System.Net;
-using System.Net.Http.Json;
-using Discord;
+﻿using Discord;
 using Discord.WebSocket;
-using NorDevBestOfBot.Models;
 
 namespace NorDevBestOfBot;
 
@@ -163,24 +160,6 @@ public class Helpers
         return embed.Type == EmbedType.Image && Uri.IsWellFormedUriString(embed.Url, UriKind.Absolute);
     }
 
-    public static async Task<Comment?> CheckIfMessageAlreadyPersistedAsync(string messageLink, HttpClient httpClient)
-    {
-        var PotentalPersistedMessageLink =
-            $"https://nordevcommentsbackend.fly.dev/api/messages/GetMessageByMessageLink?id={messageLink}";
-
-        try
-        {
-            Console.WriteLine("Checking if message has already been persisted");
-            var response = await httpClient.GetFromJsonAsync<Comment?>(PotentalPersistedMessageLink);
-            return response;
-        }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-        {
-            Console.WriteLine("message not found");
-            return null;
-        }
-    }
-
     public static string UserNominatingOwnComment(SocketGuildUser user)
     {
         List<string> replies = new()
@@ -194,7 +173,7 @@ public class Helpers
         return replies[r.Next(replies.Count)];
     }
 
-    public static string GeneralChannelGreeting(IChannel channel, SocketUser user, SocketMessage message)
+    public static string GeneralChannelGreeting(IChannel channel, SocketUser user, IMessage message)
     {
         List<string> replies = new()
         {

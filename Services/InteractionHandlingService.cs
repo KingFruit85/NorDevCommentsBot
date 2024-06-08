@@ -1,5 +1,4 @@
 using System.Reflection;
-using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
@@ -49,7 +48,11 @@ public class InteractionHandlingService : IHostedService
             return _interactions.RegisterCommandsToGuildAsync(_serverOptions.Value.GuildId);
         };
 
-        _discord.InteractionCreated += OnInteractionAsync;
+        // _discord.InteractionCreated += OnInteractionAsync;
+        _discord.SlashCommandExecuted += SlashCommandExecuted;
+        _discord.ButtonExecuted += ButtonComponentExecuted;
+        _discord.MessageCommandExecuted += MessageCommandExecuted;
+
         await _interactions.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
     }
 
@@ -59,21 +62,69 @@ public class InteractionHandlingService : IHostedService
         return Task.CompletedTask;
     }
 
-    private async Task OnInteractionAsync(SocketInteraction interaction)
+    private async Task SlashCommandExecuted(SocketSlashCommand interaction)
     {
+        var context = new SocketInteractionContext<SocketSlashCommand>(_discord, interaction);
         try
         {
-            var context = new SocketInteractionContext(_discord, interaction);
             var result = await _interactions.ExecuteCommandAsync(context, _services);
-
             if (!result.IsSuccess)
                 await context.Channel.SendMessageAsync(result.ToString());
         }
-        catch
+        catch (Exception ex)
         {
-            if (interaction.Type == InteractionType.ApplicationCommand)
-                await interaction.GetOriginalResponseAsync()
-                    .ContinueWith(msg => msg.Result.DeleteAsync());
+            if (!context.Interaction.HasResponded)
+                await context.Interaction.RespondAsync($"An error occoured: {ex.Message}", ephemeral: true);
         }
     }
+
+    private async Task ButtonComponentExecuted(SocketMessageComponent interaction)
+    {
+        var context = new SocketInteractionContext<SocketMessageComponent>(_discord, interaction);
+        try
+        {
+            var result = await _interactions.ExecuteCommandAsync(context, _services);
+            if (!result.IsSuccess)
+                await context.Channel.SendMessageAsync(result.ToString());
+        }
+        catch (Exception ex)
+        {
+            if (!context.Interaction.HasResponded)
+                await context.Interaction.RespondAsync($"An error occoured: {ex.Message}", ephemeral: true);
+        }
+    }
+
+    private async Task MessageCommandExecuted(SocketMessageCommand interaction)
+    {
+        var context = new SocketInteractionContext<SocketMessageCommand>(_discord, interaction);
+        try
+        {
+            var result = await _interactions.ExecuteCommandAsync(context, _services);
+            if (!result.IsSuccess)
+                await context.Channel.SendMessageAsync(result.ToString());
+        }
+        catch (Exception ex)
+        {
+            if (!context.Interaction.HasResponded)
+                await context.Interaction.RespondAsync($"An error occoured: {ex.Message}", ephemeral: true);
+        }
+    }
+
+    // private async Task OnInteractionAsync(SocketInteraction interaction)
+    // {
+    //     try
+    //     {
+    //         var context = new SocketInteractionContext(_discord, interaction);
+    //         var result = await _interactions.ExecuteCommandAsync(context, _services);
+    //
+    //         if (!result.IsSuccess)
+    //             await context.Channel.SendMessageAsync(result.ToString());
+    //     }
+    //     catch
+    //     {
+    //         if (interaction.Type == InteractionType.ApplicationCommand)
+    //             await interaction.GetOriginalResponseAsync()
+    //                 .ContinueWith(msg => msg.Result.DeleteAsync());
+    //     }
+    // }
 }

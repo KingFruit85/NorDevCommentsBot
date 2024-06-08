@@ -49,6 +49,62 @@ public class ApiService
         return await GetFromJsonAsync<List<Comment>?>($"messages/getalluserscomments?user={user}");
     }
 
+    public async Task<Comment?> CheckIfMessageAlreadyPersistedAsync(string messageLink)
+    {
+        Console.WriteLine(@"Checking if message has already been persisted");
+        var response = await GetFromJsonAsync<Comment?>($"messages/GetMessageByMessageLink?id={messageLink}");
+
+        if (response != null) return response;
+
+        Console.WriteLine(@"message not found");
+        return null;
+    }
+
+    public async Task<bool> AddVoteToMessage(string messageLink, string username, bool isVote)
+    {
+        var url =
+            $"messages/addvotetomessage?messageLink={Uri.EscapeDataString(messageLink)}&username={Uri.EscapeDataString(username)}&votedYes={isVote}";
+
+        try
+        {
+            var response = await _httpClient.PostAsync(url, null);
+            if (!response.IsSuccessStatusCode)
+                _logger.LogError(
+                    $"something went wrong Request message: {response.RequestMessage}, headers: {response.Content.Headers}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+
+            return false;
+        }
+    }
+
+    public async Task<bool> SaveComment(StringContent content)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync("messages/savecomment", content);
+            Console.WriteLine($"Response: {response}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError($"POST request failed with status code: {response.StatusCode}");
+                _logger.LogError(
+                    $"something went wrong Request message: {response.RequestMessage}, headers: {response.Content.Headers}");
+            }
+
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+
+            return false;
+        }
+    }
+
     private async Task<T?> GetFromJsonAsync<T>(string endpoint)
     {
         try

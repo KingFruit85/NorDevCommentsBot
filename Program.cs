@@ -7,6 +7,7 @@ using NorDevBestOfBot;
 using NorDevBestOfBot.Extensions;
 using NorDevBestOfBot.Models.Options;
 using NorDevBestOfBot.Services;
+using NorDevBestOfBot.Services.Scheduling;
 using Serilog;
 
 using var host = Host.CreateDefaultBuilder(args)
@@ -21,8 +22,7 @@ using var host = Host.CreateDefaultBuilder(args)
         {
             MessageCacheSize = 100,
             GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent | GatewayIntents.Guilds |
-                             GatewayIntents.GuildMessages,
-            MaxWaitBetweenGuildAvailablesBeforeReady = 100000
+                             GatewayIntents.GuildMessages
         };
 
         var interactionServiceConfig = new InteractionServiceConfig
@@ -45,57 +45,10 @@ using var host = Host.CreateDefaultBuilder(args)
                     interactionServiceConfig))
             .AddSingleton<ApiService>()
             .AddHostedService<InteractionHandlingService>()
+            .AddSingleton<BackgroundScheduler>()
+            .AddSingleton<PostTopMonthCommentsScheduledTask>()
             .AddHostedService<Startup>();
-        // .AddSingleton<BackgroundScheduler>();
     })
     .Build();
 
 await host.RunAsync();
-
-//     public static async Task MessageCommandHandler(SocketMessageCommand command)
-//     {
-//         await command.DeferAsync();
-//
-//         Console.WriteLine("Entering MessageCommandHandler");
-//
-//         try
-//         {
-//             Console.WriteLine($"received {command.Data.Name} command from {command.User}");
-//
-//             if (command.Data.Name == "nominate-message")
-//             {
-//                 try
-//                 {
-//                     await NominateMessage.HandleNominateMessageAsync(command, DiscordClient!, HttpClient, Guild);
-//                 }
-//                 catch (Exception ex)
-//                 {
-//                     Console.WriteLine(ex.ToString());
-//                     throw;
-//                 }
-//             }
-//             else
-//             {
-//                 Console.WriteLine($"Received unknown context command: {command.Data.Name}");
-//             }
-//         }
-//         catch (Exception ex)
-//         {
-//             Console.WriteLine($"An error occurred in MessageCommandHandler: {ex.Message}");
-//         }
-//
-//         Console.WriteLine("Exiting MessageCommandHandler");
-//     }
-//
-//     public static async Task MyButtonHandler(SocketMessageComponent component)
-//     {
-//         Console.WriteLine($"Button interaction received, triggered by {component.User}");
-//         await VoteButtonHandler.Vote(DiscordClient!, component, HttpClient);
-//         return;
-//     }
-//
-//     public void Dispose()
-//     {
-//         throw new NotImplementedException();
-//     }
-// }

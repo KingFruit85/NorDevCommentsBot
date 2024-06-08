@@ -5,16 +5,16 @@ using Microsoft.Extensions.Logging;
 using NorDevBestOfBot.Extensions;
 using NorDevBestOfBot.Services;
 
-namespace NorDevBestOfBot.SlashCommands;
+namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class GetThisMonthsComments : InteractionModuleBase<SocketInteractionContext>
+public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     private readonly ApiService _apiService;
     private readonly DiscordSocketClient _client;
-    private readonly ILogger<GetThisMonthsComments> _logger;
+    private readonly ILogger<GetTopTenComments> _logger;
 
-    public GetThisMonthsComments(ApiService apiService,
-        ILogger<GetThisMonthsComments> logger,
+    public GetTopTenComments(ApiService apiService,
+        ILogger<GetTopTenComments> logger,
         DiscordSocketClient client)
     {
         _apiService = apiService;
@@ -22,27 +22,17 @@ public class GetThisMonthsComments : InteractionModuleBase<SocketInteractionCont
         _client = client;
     }
 
-    [SlashCommand("get-this-months-comments", "Gets this month's comments.")]
+    [SlashCommand("get-top-ten-comments", "Gets the top ten comments of all time from the server.")]
     public async Task Handle([Summary(description: "Hide this post?")] bool isEphemeral = true)
     {
         await DeferAsync(isEphemeral);
 
-        var channel = Context.Channel as ITextChannel;
-
-        await PostThisMonthsComments(channel, isEphemeral);
-
-        await FollowupAsync(
-            "I hope you enjoyed reading though this month's comments as much as I did 🤗",
-            ephemeral: isEphemeral);
-    }
-
-    public async Task PostThisMonthsComments(ITextChannel? channel, bool isEphemeral, bool isScheduled = false)
-    {
         var colours = ColourExtensions.AllowedColours();
+
 
         try
         {
-            var response = await _apiService.GetThisMonthsComments();
+            var response = await _apiService.GetTopTenComments();
 
             if (response is not null)
             {
@@ -52,7 +42,7 @@ public class GetThisMonthsComments : InteractionModuleBase<SocketInteractionCont
                     var replyHint = string.Empty;
                     var colourToUse = colours[index % colours.Count];
 
-                    var (guildId, channelId, messageId) = ParseMessageLink(comment.messageLink!);
+                    var (guildId, channelId, messageId) = ParseMessageLink(comment.messageLink);
                     var guild = _client.GetGuild(guildId);
                     var originChannel = guild.GetTextChannel(channelId);
 
@@ -88,6 +78,7 @@ public class GetThisMonthsComments : InteractionModuleBase<SocketInteractionCont
                         embeds.Add(quotedMessage.Build());
                     }
 
+
                     var nickname = (nominatedMessage.Author as IGuildUser)?.Nickname ??
                                    nominatedMessage.Author.GlobalName;
                     var avatarUrl = nominatedMessage.Author.GetAvatarUrl();
@@ -113,10 +104,10 @@ public class GetThisMonthsComments : InteractionModuleBase<SocketInteractionCont
                             )
                         );
 
-                        embeds.AddRange(nominatedMessage.Attachments.Select(attachment =>
+                        embeds.AddRange(nominatedMessage.Attachments.Select(atchmt =>
                                 new EmbedBuilder()
                                     .WithUrl(nominatedMessage.GetJumpUrl())
-                                    .WithImageUrl(attachment.Url)
+                                    .WithImageUrl(atchmt.Url)
                                     .Build()
                             )
                         );
@@ -129,20 +120,27 @@ public class GetThisMonthsComments : InteractionModuleBase<SocketInteractionCont
                             style: ButtonStyle.Link,
                             row: 0);
 
-                    if (isScheduled)
-                        await channel!.SendMessageAsync(
-                            components: linkButton.Build(),
-                            embeds: embeds.ToArray());
-                    else
-                        await FollowupAsync(
-                            components: linkButton.Build(),
-                            embeds: embeds.ToArray(),
-                            ephemeral: isEphemeral);
+                    switch (isEphemeral)
+                    {
+                        // Post for everyone to see
+                        case false:
+                            await Context.Channel.SendMessageAsync(
+                                components: linkButton.Build(),
+                                embeds: embeds.ToArray());
+                            break;
+                        // post just to user
+                        case true:
+                            await FollowupAsync(
+                                components: linkButton.Build(),
+                                embeds: embeds.ToArray(),
+                                ephemeral: isEphemeral);
+                            break;
+                    }
                 }
 
-                if (isScheduled)
-                    await channel!.SendMessageAsync(
-                        "I hope you enjoyed reading though this month's comments as much as I did 🤗");
+                await FollowupAsync(
+                    "I hope you enjoyed reading though the server's top ten comments as much as I did 🤗",
+                    ephemeral: true);
             }
         }
         catch (Exception ex)

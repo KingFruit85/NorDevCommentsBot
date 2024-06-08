@@ -5,16 +5,16 @@ using Microsoft.Extensions.Logging;
 using NorDevBestOfBot.Extensions;
 using NorDevBestOfBot.Services;
 
-namespace NorDevBestOfBot.SlashCommands;
+namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext>
+public class GetThisMonthsComments : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     private readonly ApiService _apiService;
     private readonly DiscordSocketClient _client;
-    private readonly ILogger<GetTopTenComments> _logger;
+    private readonly ILogger<GetThisMonthsComments> _logger;
 
-    public GetTopTenComments(ApiService apiService,
-        ILogger<GetTopTenComments> logger,
+    public GetThisMonthsComments(ApiService apiService,
+        ILogger<GetThisMonthsComments> logger,
         DiscordSocketClient client)
     {
         _apiService = apiService;
@@ -22,27 +22,36 @@ public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext>
         _client = client;
     }
 
-    [SlashCommand("get-top-ten-comments", "Gets the top ten comments of all time from the server.")]
+    [SlashCommand("get-this-months-comments", "Gets this month's comments.")]
     public async Task Handle([Summary(description: "Hide this post?")] bool isEphemeral = true)
     {
         await DeferAsync(isEphemeral);
 
-        var colours = ColourExtensions.AllowedColours();
+        var channel = Context.Channel as ITextChannel;
 
+        await PostThisMonthsComments(channel, isEphemeral);
+
+        await FollowupAsync(
+            "I hope you enjoyed reading though this month's comments as much as I did 🤗",
+            ephemeral: isEphemeral);
+    }
+
+    public async Task PostThisMonthsComments(ITextChannel? channel, bool isEphemeral, bool isScheduled = false)
+    {
+        var colours = ColourExtensions.AllowedColours();
 
         try
         {
-            var response = await _apiService.GetTopTenComments();
+            var response = await _apiService.GetThisMonthsComments();
 
             if (response is not null)
-            {
                 foreach (var (comment, index) in response.Select((comment, index) => (comment, index)))
                 {
                     List<Embed> embeds = new();
                     var replyHint = string.Empty;
                     var colourToUse = colours[index % colours.Count];
 
-                    var (guildId, channelId, messageId) = ParseMessageLink(comment.messageLink);
+                    var (guildId, channelId, messageId) = ParseMessageLink(comment.messageLink!);
                     var guild = _client.GetGuild(guildId);
                     var originChannel = guild.GetTextChannel(channelId);
 
@@ -78,7 +87,6 @@ public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext>
                         embeds.Add(quotedMessage.Build());
                     }
 
-
                     var nickname = (nominatedMessage.Author as IGuildUser)?.Nickname ??
                                    nominatedMessage.Author.GlobalName;
                     var avatarUrl = nominatedMessage.Author.GetAvatarUrl();
@@ -104,10 +112,10 @@ public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext>
                             )
                         );
 
-                        embeds.AddRange(nominatedMessage.Attachments.Select(atchmt =>
+                        embeds.AddRange(nominatedMessage.Attachments.Select(attachment =>
                                 new EmbedBuilder()
                                     .WithUrl(nominatedMessage.GetJumpUrl())
-                                    .WithImageUrl(atchmt.Url)
+                                    .WithImageUrl(attachment.Url)
                                     .Build()
                             )
                         );
@@ -120,28 +128,11 @@ public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext>
                             style: ButtonStyle.Link,
                             row: 0);
 
-                    switch (isEphemeral)
-                    {
-                        // Post for everyone to see
-                        case false:
-                            await Context.Channel.SendMessageAsync(
-                                components: linkButton.Build(),
-                                embeds: embeds.ToArray());
-                            break;
-                        // post just to user
-                        case true:
-                            await FollowupAsync(
-                                components: linkButton.Build(),
-                                embeds: embeds.ToArray(),
-                                ephemeral: isEphemeral);
-                            break;
-                    }
+                    await FollowupAsync(
+                        components: linkButton.Build(),
+                        embeds: embeds.ToArray(),
+                        ephemeral: isEphemeral);
                 }
-
-                await FollowupAsync(
-                    "I hope you enjoyed reading though the server's top ten comments as much as I did 🤗",
-                    ephemeral: true);
-            }
         }
         catch (Exception ex)
         {

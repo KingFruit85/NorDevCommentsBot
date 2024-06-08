@@ -1,11 +1,12 @@
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using NorDevBestOfBot.Services;
 
-namespace NorDevBestOfBot.SlashCommands;
+namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class GetTopTenUsersByPostCount : InteractionModuleBase<SocketInteractionContext>
+public class GetTopTenUsersByPostCount : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     private readonly ApiService _apiService;
     private readonly ILogger<GetTopTenUsersByPostCount> _logger;
