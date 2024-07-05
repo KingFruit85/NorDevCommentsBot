@@ -1,35 +1,27 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using NorDevBestOfBot.Models;
-using System.Net;
-using System.Net.Http.Json;
 
 namespace NorDevBestOfBot;
 
 public class Helpers
 {
-
     public static List<Embed> GetEmbedsAndattachments(IUserMessage message)
     {
         List<Embed> embeds = new();
 
         if (message.Embeds is not null || message.Embeds?.Count > 0)
-        {
             foreach (var embed in message.Embeds)
             {
                 var em = new EmbedBuilder()
-                        .WithUrl(message.GetJumpUrl().Trim())
-                        .WithImageUrl(embed.Url)
-                        .Build();
+                    .WithUrl(message.GetJumpUrl().Trim())
+                    .WithImageUrl(embed.Url)
+                    .Build();
 
                 embeds.Add(em);
             }
-        }
 
         if (message.Attachments != null && message.Attachments.Count > 0)
-        {
             foreach (var attachment in message.Attachments)
-            {
                 if (attachment.Width > 0 && attachment.Height > 0)
                 {
                     var at = new EmbedBuilder()
@@ -39,11 +31,8 @@ public class Helpers
 
                     embeds.Add(at);
                 }
-            }
-        }
 
         return embeds;
-
     }
 
     public static string GetUserNameAdjective()
@@ -104,29 +93,24 @@ public class Helpers
 
         Random random = new();
 
-        int randomIndex = random.Next(positiveAdjectives.Count);
+        var randomIndex = random.Next(positiveAdjectives.Count);
 
-        string randomAdjective = positiveAdjectives[randomIndex];
+        var randomAdjective = positiveAdjectives[randomIndex];
 
         return randomAdjective;
-
     }
 
     public static async Task<string> TryGetAvatarAsync(string url)
     {
-        string avatarImage = "https://www.publicdomainpictures.net/pictures/40000/velka/question-mark.jpg";
+        var avatarImage = "https://www.publicdomainpictures.net/pictures/40000/velka/question-mark.jpg";
 
         using (HttpClient client = new())
         {
             try
             {
-                HttpResponseMessage response = await client.GetAsync(url);
+                var response = await client.GetAsync(url);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    avatarImage = url!;
-                }
-
+                if (response.IsSuccessStatusCode) avatarImage = url!;
             }
             catch (Exception ex)
             {
@@ -143,10 +127,7 @@ public class Helpers
         string[] imageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
         var parts = filename.Split('.');
         var ext = '.' + parts.Last().ToLower();
-        if (ext.Contains('?'))
-        {
-            ext = ext.Split('?')[0];
-        }
+        if (ext.Contains('?')) ext = ext.Split('?')[0];
         Console.WriteLine($"Checking to see if attachment is image, ext is {ext}");
 
         return imageExtensions.Contains(ext);
@@ -157,10 +138,7 @@ public class Helpers
         string[] audioExtensions = { ".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac" };
         var parts = filename.Split('.');
         var ext = '.' + parts.Last().ToLower();
-        if (ext.Contains('?'))
-        {
-            ext = ext.Split('?')[0];
-        }
+        if (ext.Contains('?')) ext = ext.Split('?')[0];
 
         return audioExtensions.Contains(ext);
     }
@@ -170,10 +148,7 @@ public class Helpers
         string[] videoExtensions = { ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm" };
         var parts = filename.Split('.');
         var ext = '.' + parts.Last().ToLower();
-        if (ext.Contains('?'))
-        {
-            ext = ext.Split('?')[0];
-        }
+        if (ext.Contains('?')) ext = ext.Split('?')[0];
 
         return videoExtensions.Contains(ext);
     }
@@ -185,23 +160,6 @@ public class Helpers
         return embed.Type == EmbedType.Image && Uri.IsWellFormedUriString(embed.Url, UriKind.Absolute);
     }
 
-    public static async Task<Comment?> CheckIfMessageAlreadyPersistedAsync(string messageLink, HttpClient httpClient)
-    {
-        var PotentalPersistedMessageLink = $"https://nordevcommentsbackend.fly.dev/api/messages/GetMessageByMessageLink?id={messageLink}";
-
-        try
-        {
-            Console.WriteLine("Checking if message has already been persisted");
-            var response = await httpClient.GetFromJsonAsync<Comment?>(PotentalPersistedMessageLink);
-            return response;
-        }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-        {
-            Console.WriteLine("message not found");
-            return null;
-        }
-    }
-
     public static string UserNominatingOwnComment(SocketGuildUser user)
     {
         List<string> replies = new()
@@ -210,12 +168,12 @@ public class Helpers
             $"@everyone Everyone look, {user.Mention} just tried to nominate their own comment 🤣🤣🤣"
         };
 
-         Random r = new();
+        Random r = new();
 
         return replies[r.Next(replies.Count)];
     }
 
-    public static string GeneralChannelGreeting(IChannel channel, SocketUser user, SocketMessage message)
+    public static string GeneralChannelGreeting(IChannel channel, SocketUser user, IMessage message)
     {
         List<string> replies = new()
         {
@@ -271,7 +229,7 @@ public class Helpers
                         .WithAuthor(refrencedMessage.Author)
                         .WithDescription(refrencedMessage.Content)
                         .WithTimestamp(refrencedMessage.Timestamp)
-                        .WithColor(color: new Color(0, 100, 0))
+                        .WithColor(new Color(0, 100, 0))
                         .WithUrl(messageLink)
                         .Build();
 
@@ -286,7 +244,7 @@ public class Helpers
                         .WithImageUrl(refrencedMessage.Attachments.First().Url)
                         .WithDescription(refrencedMessage.Content)
                         .WithTimestamp(refrencedMessage.Timestamp)
-                        .WithColor(color: new Color(0, 100, 0))
+                        .WithColor(new Color(0, 100, 0))
                         .WithUrl(messageLink)
                         .Build();
 
@@ -299,7 +257,6 @@ public class Helpers
                     // Check message attachments
                     foreach (var attachment in refrencedMessage.Attachments.Skip(1))
                     {
-
                         Console.WriteLine("Checking refrenced message attachments");
 
                         if (IsImageAttachment(attachment.Url))
@@ -319,12 +276,13 @@ public class Helpers
                             embeds.Add(e);
                         }
                     }
+
                     var refEmbed = new EmbedBuilder()
                         .WithAuthor(refrencedMessage.Author)
                         .WithImageUrl(refrencedMessage.Attachments.First().Url)
                         .WithDescription(refrencedMessage.Content)
                         .WithTimestamp(refrencedMessage.Timestamp)
-                        .WithColor(color: new Color(0, 100, 0))
+                        .WithColor(new Color(0, 100, 0))
                         .WithUrl(messageLink)
                         .Build();
 
@@ -336,6 +294,7 @@ public class Helpers
                 Console.WriteLine("Refrenced Message is null");
             }
         }
+
         return embeds;
     }
 }

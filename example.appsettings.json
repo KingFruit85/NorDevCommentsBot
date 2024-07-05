@@ -1,0 +1,12 @@
+{
+  "BotOptions": {
+    "Token": "your bot token"
+  },
+  "ServerOptions": {
+    "GuildId": 12345,
+    "ChannelId": 12345
+  },
+  "ApiOptions": {
+    "BaseUrl": "your api url with a trailing slash"
+  }
+}
