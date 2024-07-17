@@ -8,40 +8,35 @@ using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.MessageComponents;
 
-public class VoteButton : InteractionModuleBase<SocketInteractionContext<SocketMessageComponent>>
+public class VoteButton(
+    DiscordSocketClient client, 
+    ApiService apiservice) : InteractionModuleBase<SocketInteractionContext<SocketMessageComponent>>
 {
-    private readonly ApiService _apiService;
-    private readonly DiscordSocketClient _client;
+    private readonly ApiService _apiService = apiservice;
+    private readonly DiscordSocketClient _client = client;
 
-    public VoteButton(DiscordSocketClient client, ApiService apiservice)
-    {
-        _client = client;
-        _apiService = apiservice;
-    }
-
-    [ComponentInteraction("vote_button_*")]
-    public async Task Handle(bool isVote)
+    [ComponentInteraction("vote:*,*")]
+    public async Task Handle(bool isVote, string nominatedMessageLink)
     {
         await DeferAsync();
+        
+        var parts = nominatedMessageLink.Split('/');
+        
+        var serverId = parts[4];
+        var channelId = parts[5];
+        var messageId = parts[6];
 
-        var messageLink = Context.Interaction.Message.GetJumpUrl();
-
-        var serverId = Context.Interaction.GuildId!.Value;
-        var server = _client.GetGuild(serverId);
-
-        var channelId = Context.Interaction.ChannelId!.Value;
-        var channel = server.GetTextChannel(channelId);
-
-        var messageId = Context.Interaction.Message.Id;
-        var message = await channel.GetMessageAsync(messageId);
+        var server = _client.GetGuild(ulong.Parse(serverId));
+        var channel = server.GetTextChannel(ulong.Parse(channelId));
+        var message = await channel.GetMessageAsync(ulong.Parse(messageId));
 
         var voteCountToAdd = isVote ? 1 : -1;
 
-        var persistedMessage = await _apiService.CheckIfMessageAlreadyPersistedAsync(messageLink.Trim());
+        var persistedMessage = await _apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink);
 
         if (persistedMessage is not null && persistedMessage.voters!.Contains(Context.User.Username))
         {
-            Console.WriteLine("message found in the database");
+            Console.WriteLine(@"message found in the database");
             await FollowupAsync(
                 $"You've already voted for this message!, it currently has {persistedMessage.voteCount} votes",
                 ephemeral: true);
@@ -52,15 +47,15 @@ public class VoteButton : InteractionModuleBase<SocketInteractionContext<SocketM
         if (persistedMessage is not null && !persistedMessage.voters!.Contains(Context.User.Username))
             try
             {
-                Console.WriteLine("preparing message to POST");
-                Console.WriteLine("sending addvotetomessage POST");
+                Console.WriteLine(@"preparing message to POST");
+                Console.WriteLine(@"sending addvotetomessage POST");
 
                 var isVoteAdded =
-                    await _apiService.AddVoteToMessage(messageLink.Trim(), Context.Interaction.User.Username, isVote);
+                    await _apiService.AddVoteToMessage(nominatedMessageLink.Trim(), Context.Interaction.User.Username, isVote);
 
                 if (isVoteAdded)
                 {
-                    Console.WriteLine("addvotetomessage Success");
+                    Console.WriteLine(@"addvotetomessage Success");
 
                     var isPlural = persistedMessage.voteCount + voteCountToAdd == 1 ? "" : "s";
 
@@ -85,9 +80,9 @@ public class VoteButton : InteractionModuleBase<SocketInteractionContext<SocketM
         // If first time voted on
         var comment = new Comment
         {
-            messageLink = messageLink.Trim(),
-            messageId = messageId.ToString(),
-            serverId = serverId.ToString(),
+            messageLink = nominatedMessageLink.Trim(),
+            messageId = messageId,
+            serverId = serverId,
             userName = message.Author.Username,
             userTag = message.Author.Username,
             comment = message.Content,
@@ -151,7 +146,7 @@ public class VoteButton : InteractionModuleBase<SocketInteractionContext<SocketM
             var data = JsonSerializer.Serialize(comment);
             var content = new StringContent(data, Encoding.UTF8, "application/json");
 
-            Console.WriteLine($"creating new record with following content {data}");
+            Console.WriteLine($@"creating new record with following content {data}");
             var isCommentSavedSuccessfully = await _apiService.SaveComment(content);
 
             if (isCommentSavedSuccessfully)

@@ -128,7 +128,7 @@ public class Helpers
         var parts = filename.Split('.');
         var ext = '.' + parts.Last().ToLower();
         if (ext.Contains('?')) ext = ext.Split('?')[0];
-        Console.WriteLine($"Checking to see if attachment is image, ext is {ext}");
+        Console.WriteLine($@"Checking to see if attachment is image, ext is {ext}");
 
         return imageExtensions.Contains(ext);
     }
@@ -212,16 +212,16 @@ public class Helpers
         Console.Write("Entering GetReferencedMessage");
         if (message is IUserMessage userMessage)
         {
-            Console.WriteLine("Message is IUserMessage");
+            Console.WriteLine(@"Message is IUserMessage");
             var refrencedMessage = userMessage.ReferencedMessage;
 
             if (refrencedMessage != null)
             {
                 var messageLink = userMessage.ReferencedMessage.GetJumpUrl().Trim();
 
-                Console.WriteLine("Referenced message is not null");
+                Console.WriteLine(@"Referenced message is not null");
 
-                Console.WriteLine($"Referenced message attachment count:{refrencedMessage.Attachments.Count}");
+                Console.WriteLine($@"Referenced message attachment count:{refrencedMessage.Attachments.Count}");
 
                 if (refrencedMessage.Attachments.Count == 0)
                 {
@@ -257,7 +257,7 @@ public class Helpers
                     // Check message attachments
                     foreach (var attachment in refrencedMessage.Attachments.Skip(1))
                     {
-                        Console.WriteLine("Checking refrenced message attachments");
+                        Console.WriteLine(@"Checking refrenced message attachments");
 
                         if (IsImageAttachment(attachment.Url))
                         {
@@ -291,7 +291,7 @@ public class Helpers
             }
             else
             {
-                Console.WriteLine("Refrenced Message is null");
+                Console.WriteLine(@"Refrenced Message is null");
             }
         }
 

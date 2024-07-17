@@ -17,7 +17,7 @@ internal class DatabaseCreator
         if (response != null)
             foreach (var message in response)
             {
-                Console.WriteLine($"Creating message : {message.messageLink}");
+                Console.WriteLine($@"Creating message : {message.messageLink}");
                 var messageLinkParts = message.messageLink!.Split('/');
                 var guildId = ulong.Parse(message.serverId!);
                 var channelId = ulong.Parse(messageLinkParts[5]);
@@ -26,13 +26,13 @@ internal class DatabaseCreator
                 var originChannel = guild.GetTextChannel(channelId);
                 var nominatedMessage = await originChannel.GetMessageAsync(nominatedMessageId);
 
-                if (nominatedMessage is null) Console.WriteLine("nominated message is null!");
+                if (nominatedMessage is null)
+                {
+                    throw new Exception($"Error retrieving nominated message from channel {channelId}");
+                }
 
-                var nominatedMessageEmbedsAndAttachmentUrls = new List<string>();
-
-                foreach (var embed in nominatedMessage.Embeds) nominatedMessageEmbedsAndAttachmentUrls.Add(embed.Url);
-                foreach (var attachment in nominatedMessage.Attachments)
-                    nominatedMessageEmbedsAndAttachmentUrls.Add(attachment.Url);
+                var nominatedMessageEmbedsAndAttachmentUrls = nominatedMessage.Embeds.Select(embed => embed.Url).ToList();
+                    nominatedMessageEmbedsAndAttachmentUrls.AddRange(nominatedMessage.Attachments.Select(attachment => attachment.Url));
 
                 DiscordMessage messageToPersist = new()
                 {
@@ -54,30 +54,25 @@ internal class DatabaseCreator
                     Voters = message.voters
                 };
 
-                if (nominatedMessage is IUserMessage userMessage && userMessage.ReferencedMessage is not null)
+                if (nominatedMessage is IUserMessage { ReferencedMessage: not null } userMessage)
                 {
-                    IMessage? refedMessage = userMessage.ReferencedMessage;
-                    var refedMessageEmbedsAndAttachmentUrls = new List<string>();
+                    IMessage? referencedMessage = userMessage.ReferencedMessage;
+                    var referencedMessageEmbedsAndAttachmentUrls = referencedMessage.Embeds.Select(embed => embed.Url).ToList();
+                    referencedMessageEmbedsAndAttachmentUrls.AddRange(referencedMessage.Attachments.Select(attachment => attachment.Url));
 
-                    foreach (var embed in refedMessage.Embeds) refedMessageEmbedsAndAttachmentUrls.Add(embed.Url);
-                    foreach (var attachment in refedMessage.Attachments)
-                        refedMessageEmbedsAndAttachmentUrls.Add(attachment.Url);
-
-                    if (refedMessage is not null)
-                    {
-                        messageToPersist.QuotedMessageMessageLink = refedMessage.GetJumpUrl() ?? null;
-                        messageToPersist.QuotedMessageComment = refedMessage.Content ?? null;
-                        messageToPersist.QuotedMessageAuthorUserName = refedMessage.Author.Username ?? null;
-                        messageToPersist.QuotedMessageAvatarLink = refedMessage.Author.GetAvatarUrl() ?? null;
-                        messageToPersist.QuotedMessageEmbedAndAttachmentUrls =
-                            refedMessageEmbedsAndAttachmentUrls ?? null;
-                        messageToPersist.QuotedMessageAuthorDisplayname =
-                            (refedMessage.Author as IGuildUser)?.Nickname ?? refedMessage.Author.GlobalName;
-                    }
+                    messageToPersist.QuotedMessageMessageLink = referencedMessage.GetJumpUrl() ?? null;
+                    messageToPersist.QuotedMessageComment = referencedMessage.Content ?? null;
+                    messageToPersist.QuotedMessageAuthorUserName = referencedMessage.Author.Username ?? null;
+                    messageToPersist.QuotedMessageAvatarLink = referencedMessage.Author.GetAvatarUrl() ?? null;
+                    messageToPersist.QuotedMessageEmbedAndAttachmentUrls =
+                        referencedMessageEmbedsAndAttachmentUrls ?? null;
+                    messageToPersist.QuotedMessageAuthorDisplayname =
+                        (referencedMessage.Author as IGuildUser)?.Nickname ?? referencedMessage.Author.GlobalName;
                 }
 
                 // Save comment
-                var apiUrl = "https://nordevcommentsbackend.fly.dev/api/messages/savenewcomment";
+                // TODO: use options value for base url
+                const string apiUrl = "https://nordevcommentsbackend.fly.dev/api/messages/savenewcomment";
                 var data = JsonSerializer.Serialize(messageToPersist);
 
                 try
@@ -85,11 +80,9 @@ internal class DatabaseCreator
                     var content = new StringContent(data, Encoding.UTF8, "application/json");
                     var postResponse = await httpClient.PostAsync(apiUrl, content);
 
-                    if (postResponse.IsSuccessStatusCode)
-                        Console.WriteLine($"Persisted message! : {messageToPersist.NominatedMessageLink}");
-                    else
-                        Console.WriteLine(
-                            $"POST request failed for message : {messageToPersist.NominatedMessageLink},  with status code: {postResponse.StatusCode}");
+                    Console.WriteLine(postResponse.IsSuccessStatusCode
+                        ? $@"Persisted message! : {messageToPersist.NominatedMessageLink}"
+                        : $@"POST request failed for message : {messageToPersist.NominatedMessageLink},  with status code: {postResponse.StatusCode}");
                 }
                 catch (Exception ex)
                 {

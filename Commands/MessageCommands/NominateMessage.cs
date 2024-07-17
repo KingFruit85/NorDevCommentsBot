@@ -21,10 +21,10 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
     [MessageCommand("nominate-message")]
     public async Task Handle(IMessage msg)
     {
-        Console.WriteLine("Entered HandleNominateMessageAsync");
+        Console.WriteLine(@"Entered HandleNominateMessageAsync");
         await DeferAsync();
 
-        Console.WriteLine("Checking if user nominated own message");
+        Console.WriteLine(@"Checking if user nominated own message");
         if (Context.Interaction.User.Id == msg.Author.Id && Context.Interaction.User.Id != 317070992339894273)
         {
             var interactionUser = Context.Guild!.GetUser(Context.Interaction.User.Id);
@@ -61,12 +61,12 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
         var voteButtons = new ComponentBuilder()
             .WithButton(
                 "I Agree 👍🏻",
-                "vote_button_true",
+                $"vote:true,{nominatedMessageLink}",
                 ButtonStyle.Success,
                 row: 0)
             .WithButton(
                 "I Disagree 💩",
-                "vote_button_false",
+                $"vote:false,{nominatedMessageLink}",
                 ButtonStyle.Danger,
                 row: 0)
             .WithButton(
@@ -76,26 +76,26 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
         // Create a list of embeds that we will include with the response
         List<Embed> embeds = new();
 
-        // Check if the message refrences another message, if it does we'll want to post that first
+        // Check if the message references another message, if it does we'll want to post that first
         if (refrencedMessage is not null)
         {
-            Console.WriteLine("Creating embeds for refrenced message");
+            Console.WriteLine(@"Creating embeds for referenced message");
             Console.WriteLine(
-                $"The refrenced message has {refrencedMessage.Embeds.Count} embeds and {refrencedMessage.Attachments.Count} attachments");
+                $@"The referenced message has {refrencedMessage.Embeds.Count} embeds and {refrencedMessage.Attachments.Count} attachments");
 
-            var refrencedMessageEmbed = new EmbedBuilder()
+            var referencedMessageEmbed = new EmbedBuilder()
                 .WithAuthor(refrencedMessage.Author)
                 .WithDescription(refrencedMessage.Content)
                 .WithUrl(refMessageLink);
 
             if (!refrencedMessage.Embeds.Any() || !refrencedMessage.Attachments.Any())
-                embeds.Add(refrencedMessageEmbed.Build());
+                embeds.Add(referencedMessageEmbed.Build());
 
             // Singles
             if (refrencedMessage.Embeds.Count == 1)
             {
                 var refEmbed = refrencedMessage.Embeds.FirstOrDefault();
-                var e = refrencedMessageEmbed;
+                var e = referencedMessageEmbed;
 
                 if (refEmbed!.Image.HasValue)
                 {
@@ -107,7 +107,7 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
             if (refrencedMessage.Attachments.Count == 1)
             {
                 var refAttach = refrencedMessage.Attachments.FirstOrDefault();
-                var e = refrencedMessageEmbed;
+                var e = referencedMessageEmbed;
 
                 if (refAttach!.Width > 0 && refAttach!.Height > 0)
                 {
@@ -142,9 +142,9 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
         }
 
         // Create nominated message embed
-        Console.WriteLine("Creating main embed for nominated message");
+        Console.WriteLine(@"Creating main embed for nominated message");
         Console.WriteLine(
-            $"The message has {msg.Embeds.Count} embeds and {msg.Attachments.Count} attachments");
+            $@"The message has {msg.Embeds.Count} embeds and {msg.Attachments.Count} attachments");
         var nominatedMessageEmbed = new EmbedBuilder()
             .WithAuthor(msg.Author)
             .WithDescription(msg.Content)
@@ -152,26 +152,25 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
 
         if (!msg.Embeds.Any() || !msg.Attachments.Any())
         {
-            Console.WriteLine("found no embeds or attachments");
+            Console.WriteLine(@"found no embeds or attachments");
             embeds.Add(nominatedMessageEmbed.Build());
         }
 
         if (msg.Embeds.Count == 1 || msg.Attachments.Count == 1)
         {
             var embed = msg.Embeds.FirstOrDefault();
-            var e = nominatedMessageEmbed;
             if (embed is not null && embed!.Image.HasValue)
             {
-                Console.WriteLine("found 1 embed");
-                e.WithImageUrl(embed.Image.Value.Url);
-                embeds.Add(e.Build());
+                Console.WriteLine(@"found 1 embed");
+                nominatedMessageEmbed.WithImageUrl(embed.Image.Value.Url);
+                embeds.Add(nominatedMessageEmbed.Build());
             }
 
             var attachment = msg.Attachments.FirstOrDefault();
 
             if (attachment is not null && attachment.Width > 0 && attachment.Height > 0)
             {
-                Console.WriteLine("found 1 attachment");
+                Console.WriteLine(@"found 1 attachment");
                 var a = nominatedMessageEmbed;
                 a.WithImageUrl(attachment.Url);
                 embeds.Add(a.Build());
@@ -197,7 +196,7 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
 
             if (msg.Attachments is not null)
             {
-                Console.WriteLine($"found {msg.Attachments.Count} attachments");
+                Console.WriteLine($@"found {msg.Attachments.Count} attachments");
                 foreach (var attachment in msg.Attachments)
                     if (attachment.Width > 0 && attachment.Height > 0)
                     {
@@ -210,7 +209,7 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
 
 
         // Post to original channel
-        Console.WriteLine("Posting message to channel message was nominated in");
+        Console.WriteLine(@"Posting message to channel message was nominated in");
 
         await FollowupAsync(
             $"**The {Helpers.GetUserNameAdjective()} {Context.Interaction.User.Mention}** has nominated **{msg.Author.Mention}'s** message to be added to the best of list",
@@ -222,10 +221,8 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
 
         // Post to the general channel if the nominated message didn't orginate in the general channel
         var generalChannel = Context.Client.GetChannel(generalChannelId) as ITextChannel;
-        var sendToGeneralChannel =
-            true; // testing toggle, set to false to stop spamming lobby while testing in bottesting
 
-        if (generalChannel is not null && Context.Channel.Id != generalChannel.Id && sendToGeneralChannel)
+        if (generalChannel is not null && Context.Channel.Id != generalChannel.Id)
         {
             var messageLinkButton = voteButtons
                 .WithButton(
@@ -233,7 +230,7 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
                     style: ButtonStyle.Link,
                     url: nominatedMessageLink,
                     row: 1);
-            Console.WriteLine("Posting message to Lobby");
+            Console.WriteLine(@"Posting message to Lobby");
 
             await generalChannel.SendMessageAsync(
                 Helpers.GeneralChannelGreeting(Context.Interaction.Channel, Context.Interaction.User,

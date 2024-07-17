@@ -13,16 +13,16 @@ internal class CommentEmbed
         if (!string.IsNullOrWhiteSpace(comment.quotedMessageAuthor))
         {
             replyHint = $"(replying to {comment.quotedMessageAuthor})";
-            var questedMessage = new EmbedBuilder()
+            var quotedMessage = new EmbedBuilder()
                 .WithAuthor(comment.quotedMessageAuthor,
                     await Helpers.TryGetAvatarAsync(comment.quotedMessageAvatarLink!))
                 .WithDescription(comment.quotedMessage)
                 .WithColor(postColour);
 
             if (!string.IsNullOrWhiteSpace(comment.quotedMessageImage))
-                questedMessage.ImageUrl = comment.quotedMessageImage;
+                quotedMessage.ImageUrl = comment.quotedMessageImage;
 
-            embeds.Add(questedMessage);
+            embeds.Add(quotedMessage);
         }
 
         var message = new EmbedBuilder()

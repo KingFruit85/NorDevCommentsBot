@@ -1,3 +1,4 @@
+using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
@@ -33,7 +34,14 @@ public class GetRandomComment : InteractionModuleBase<SocketInteractionContext<S
                 var reply = await CommentEmbed.CreateEmbedAsync(response, randomColour);
                 var builtEmbed = reply.First().Build();
 
-                await FollowupAsync(embed: builtEmbed);
+                var voteButtons = new ComponentBuilder()
+                    .WithButton(
+                        "Take me to the post 📫",
+                        style: ButtonStyle.Link,
+                        url: response.messageLink,
+                        row: 1);
+
+                await FollowupAsync(embed: builtEmbed, components: voteButtons.Build());
             }
             else
             {

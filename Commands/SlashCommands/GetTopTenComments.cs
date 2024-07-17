@@ -34,14 +34,19 @@ public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext<
         {
             var response = await _apiService.GetTopTenComments();
 
-            if (response is not null)
+            if (response is null)
             {
-                foreach (var (comment, index) in response.Select((comment, index) => (comment, index)))
-                {
-                    List<Embed> embeds = new();
-                    var replyHint = string.Empty;
-                    var colourToUse = colours[index % colours.Count];
+                throw new Exception("Error retrieving data from the api service");
+            }
 
+            foreach (var (comment, index) in response.Select((comment, index) => (comment, index)))
+            {
+                List<Embed> embeds = [];
+                var replyHint = string.Empty;
+                var colourToUse = colours[index % colours.Count];
+
+                if (comment.messageLink != null)
+                {
                     var (guildId, channelId, messageId) = ParseMessageLink(comment.messageLink);
                     var guild = _client.GetGuild(guildId);
                     var originChannel = guild.GetTextChannel(channelId);
@@ -137,11 +142,11 @@ public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext<
                             break;
                     }
                 }
-
-                await FollowupAsync(
-                    "I hope you enjoyed reading though the server's top ten comments as much as I did 🤗",
-                    ephemeral: true);
             }
+
+            await FollowupAsync(
+                "I hope you enjoyed reading though the server's top ten comments as much as I did 🤗",
+                ephemeral: true);
         }
         catch (Exception ex)
         {
