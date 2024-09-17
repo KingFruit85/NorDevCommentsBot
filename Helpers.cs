@@ -5,6 +5,17 @@ namespace NorDevBestOfBot;
 
 public class Helpers
 {
+    public static string GetFileNameFromDiscordUrl(string url)
+    {
+        // Remove query parameters
+        var urlWithoutQuery = url.Split('?')[0];
+
+        // Get the file name from the path
+        var fileName = Path.GetFileName(urlWithoutQuery);
+
+        return fileName;
+    }
+
     public static List<Embed> GetEmbedsAndattachments(IUserMessage message)
     {
         List<Embed> embeds = new();

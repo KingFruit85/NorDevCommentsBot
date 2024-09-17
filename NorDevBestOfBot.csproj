@@ -8,6 +8,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.301" />
+        <PackageReference Include="AWSSDK.S3" Version="3.7.402.12" />
         <PackageReference Include="Cronos" Version="0.8.4"/>
         <PackageReference Include="Discord.Net" Version="3.15.0"/>
         <PackageReference Include="FluentScheduler" Version="5.5.1"/>
@@ -46,10 +48,6 @@
         <None Update="example.appsettings.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
-    </ItemGroup>
-
-    <ItemGroup>
-        <Folder Include="Models\Options\"/>
     </ItemGroup>
 
 </Project>

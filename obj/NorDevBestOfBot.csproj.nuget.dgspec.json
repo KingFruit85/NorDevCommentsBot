@@ -1,36 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Christopher\\source\\repos\\NorDevBestOfBot\\NorDevBestOfBot\\NorDevBestOfBot.csproj": {}
+    "/Users/christopher.long/repos/NorDevCommentsBot/NorDevBestOfBot.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Christopher\\source\\repos\\NorDevBestOfBot\\NorDevBestOfBot\\NorDevBestOfBot.csproj": {
+    "/Users/christopher.long/repos/NorDevCommentsBot/NorDevBestOfBot.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Christopher\\source\\repos\\NorDevBestOfBot\\NorDevBestOfBot\\NorDevBestOfBot.csproj",
+        "projectUniqueName": "/Users/christopher.long/repos/NorDevCommentsBot/NorDevBestOfBot.csproj",
         "projectName": "NorDevBestOfBot",
-        "projectPath": "C:\\Users\\Christopher\\source\\repos\\NorDevBestOfBot\\NorDevBestOfBot\\NorDevBestOfBot.csproj",
-        "packagesPath": "C:\\Users\\Christopher\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Christopher\\source\\repos\\NorDevBestOfBot\\NorDevBestOfBot\\obj\\",
+        "projectPath": "/Users/christopher.long/repos/NorDevCommentsBot/NorDevBestOfBot.csproj",
+        "packagesPath": "/Users/christopher.long/.nuget/packages/",
+        "outputPath": "/Users/christopher.long/repos/NorDevCommentsBot/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\Christopher\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "/Users/christopher.long/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
-          "net7.0"
+          "net8.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "https://api.nuget.org/v3/index.json": {}
+          "https://api.nuget.org/v3/index.json": {},
+          "https://corgihomeplan.pkgs.visualstudio.com/_packaging/home-services/nuget/v3/index.json": {}
         },
         "frameworks": {
-          "net7.0": {
-            "targetAlias": "net7.0",
+          "net8.0": {
+            "targetAlias": "net8.0",
             "projectReferences": {}
           }
         },
@@ -38,15 +33,68 @@
           "warnAsError": [
             "NU1605"
           ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
         }
       },
       "frameworks": {
-        "net7.0": {
-          "targetAlias": "net7.0",
+        "net8.0": {
+          "targetAlias": "net8.0",
           "dependencies": {
+            "AWSSDK.Extensions.NETCore.Setup": {
+              "target": "Package",
+              "version": "[3.7.301, )"
+            },
+            "AWSSDK.S3": {
+              "target": "Package",
+              "version": "[3.7.402.12, )"
+            },
+            "Cronos": {
+              "target": "Package",
+              "version": "[0.8.4, )"
+            },
             "Discord.Net": {
               "target": "Package",
-              "version": "[3.12.0, )"
+              "version": "[3.15.0, )"
+            },
+            "FluentScheduler": {
+              "target": "Package",
+              "version": "[5.5.1, )"
+            },
+            "Microsoft.Extensions.Configuration": {
+              "target": "Package",
+              "version": "[9.0.0-preview.4.24266.19, )"
+            },
+            "Microsoft.Extensions.DependencyInjection": {
+              "target": "Package",
+              "version": "[9.0.0-preview.4.24266.19, )"
+            },
+            "Microsoft.Extensions.DependencyInjection.Abstractions": {
+              "target": "Package",
+              "version": "[9.0.0-preview.4.24266.19, )"
+            },
+            "Microsoft.Extensions.Hosting": {
+              "target": "Package",
+              "version": "[9.0.0-preview.4.24266.19, )"
+            },
+            "Serilog": {
+              "target": "Package",
+              "version": "[4.0.0, )"
+            },
+            "Serilog.Extensions.Hosting": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Serilog.Settings.Configuration": {
+              "target": "Package",
+              "version": "[8.0.1-dev-00583, )"
+            },
+            "Serilog.Sinks.Console": {
+              "target": "Package",
+              "version": "[5.1.0-dev-00943, )"
             }
           },
           "imports": [
@@ -65,7 +113,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.403\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.203/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

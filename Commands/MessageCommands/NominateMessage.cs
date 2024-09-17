@@ -1,3 +1,7 @@
+using System.Diagnostics;
+using Amazon;
+using Amazon.S3;
+using Amazon.S3.Model;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -7,16 +11,13 @@ using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.MessageCommands;
 
-public class NominateMessage : InteractionModuleBase<SocketInteractionContext<SocketMessageCommand>>
+public class NominateMessage(
+    ApiService apiService,
+    IOptions<ServerOptions> serverOptions,
+    AmazonS3Service amazonS3Service)
+    : InteractionModuleBase<SocketInteractionContext<SocketMessageCommand>>
 {
-    private readonly ApiService _apiService;
-    private readonly IOptions<ServerOptions> _serverOptions;
-
-    public NominateMessage(ApiService apiService, IOptions<ServerOptions> serverOptions)
-    {
-        _apiService = apiService;
-        _serverOptions = serverOptions;
-    }
+    private const ulong ChrisUserId = 317070992339894273;
 
     [MessageCommand("nominate-message")]
     public async Task Handle(IMessage msg)
@@ -25,7 +26,7 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
         await DeferAsync();
 
         Console.WriteLine(@"Checking if user nominated own message");
-        if (Context.Interaction.User.Id == msg.Author.Id && Context.Interaction.User.Id != 317070992339894273)
+        if (Context.Interaction.User.Id == msg.Author.Id && Context.Interaction.User.Id != ChrisUserId)
         {
             var interactionUser = Context.Guild!.GetUser(Context.Interaction.User.Id);
             await FollowupAsync(Helpers.UserNominatingOwnComment(interactionUser), ephemeral: false);
@@ -50,7 +51,7 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
         var nominatedMessageLink = msg.GetJumpUrl().Trim();
 
         var messageAlreadyPersisted =
-            await _apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink);
+            await apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink);
 
         if (messageAlreadyPersisted is not null)
         {
@@ -99,6 +100,9 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
 
                 if (refEmbed!.Image.HasValue)
                 {
+                    Console.WriteLine(@$"Attempting to upload image embed {refEmbed.Image.Value.Url} to s3");
+                    amazonS3Service.UploadImageToS3FromUrlInBackground(refEmbed.Image.Value.Url);
+                    
                     e.WithImageUrl(refEmbed.Image.Value.Url);
                     embeds.Add(e.Build());
                 }
@@ -111,6 +115,9 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
 
                 if (refAttach!.Width > 0 && refAttach!.Height > 0)
                 {
+                    Console.WriteLine(@$"Attempting to upload image embed {e.Url} to s3");
+                    amazonS3Service.UploadImageToS3FromUrlInBackground(refAttach.Url);
+                    
                     e.WithImageUrl(refAttach.Url);
                     embeds.Add(e.Build());
                 }
@@ -120,6 +127,8 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
             if (refrencedMessage.Embeds.Count > 1)
                 foreach (var e in refrencedMessage.Embeds)
                 {
+                    Console.WriteLine(@$"Attempting to upload image embed {e.Image.Value.Url} to s3");
+                    amazonS3Service.UploadImageToS3FromUrlInBackground(e.Image.Value.Url);
                     var em = new EmbedBuilder()
                         .WithUrl(refMessageLink)
                         .WithImageUrl(e.Url)
@@ -132,6 +141,8 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
                 foreach (var a in refrencedMessage.Attachments)
                     if (a.Width > 0 && a.Height > 0)
                     {
+                        Console.WriteLine(@$"Attempting to upload image embed {a.Url} to s3");
+                        amazonS3Service.UploadImageToS3FromUrlInBackground(a.Url);
                         var at = new EmbedBuilder()
                             .WithUrl(refMessageLink)
                             .WithImageUrl(a.Url)
@@ -162,6 +173,8 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
             if (embed is not null && embed!.Image.HasValue)
             {
                 Console.WriteLine(@"found 1 embed");
+                Console.WriteLine(@$"Attempting to upload image embed {embed.Url} to s3");
+                amazonS3Service.UploadImageToS3FromUrlInBackground(embed.Image.Value.Url);
                 nominatedMessageEmbed.WithImageUrl(embed.Image.Value.Url);
                 embeds.Add(nominatedMessageEmbed.Build());
             }
@@ -171,6 +184,9 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
             if (attachment is not null && attachment.Width > 0 && attachment.Height > 0)
             {
                 Console.WriteLine(@"found 1 attachment");
+                Console.WriteLine(@$"Attempting to upload image attachment {attachment.Url} to s3");
+                amazonS3Service.UploadImageToS3FromUrlInBackground(attachment.Url);
+
                 var a = nominatedMessageEmbed;
                 a.WithImageUrl(attachment.Url);
                 embeds.Add(a.Build());
@@ -200,6 +216,8 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
                 foreach (var attachment in msg.Attachments)
                     if (attachment.Width > 0 && attachment.Height > 0)
                     {
+                        Console.WriteLine(@$"Attempting to upload image attachment {attachment.Url} to s3");
+                        amazonS3Service.UploadImageToS3FromUrlInBackground(attachment.Url);
                         var e = nominatedMessageEmbed;
                         e.WithImageUrl(attachment.Url);
                         embeds.Add(e.Build());
@@ -217,12 +235,12 @@ public class NominateMessage : InteractionModuleBase<SocketInteractionContext<So
             embeds: embeds.ToArray()
         );
 
-        var generalChannelId = _serverOptions.Value.ChannelId;
+        var generalChannelId = serverOptions.Value.ChannelId;
 
-        // Post to the general channel if the nominated message didn't orginate in the general channel
+        // Post to the general channel if the nominated message didn't originate in the general channel
         var generalChannel = Context.Client.GetChannel(generalChannelId) as ITextChannel;
 
-        if (generalChannel is not null && Context.Channel.Id != generalChannel.Id)
+        if (generalChannel is not null && Context.Channel.Id != generalChannel.Id &&  Context.Interaction.User.Id != ChrisUserId)
         {
             var messageLinkButton = voteButtons
                 .WithButton(

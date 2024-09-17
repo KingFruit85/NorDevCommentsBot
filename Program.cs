@@ -1,6 +1,8 @@
-﻿using Discord;
+﻿using Amazon.S3;
+using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NorDevBestOfBot;
@@ -34,7 +36,10 @@ using var host = Host.CreateDefaultBuilder(args)
         services
             .Configure<BotOptions>(builderContext.Configuration.GetSection("BotOptions"))
             .Configure<ServerOptions>(builderContext.Configuration.GetSection("ServerOptions"))
-            .Configure<ApiOptions>(builderContext.Configuration.GetSection("ApiOptions"));
+            .Configure<ApiOptions>(builderContext.Configuration.GetSection("ApiOptions"))
+            .Configure<AmazonS3Options>(builderContext.Configuration.GetSection("AmazonS3Options"))
+            .AddDefaultAWSOptions(builderContext.Configuration.GetAWSOptions())
+            .AddAWSService<IAmazonS3>();
 
         services
             .AddSingleton(new HttpClient())
@@ -44,6 +49,7 @@ using var host = Host.CreateDefaultBuilder(args)
                 new InteractionService(sp.GetRequiredService<DiscordSocketClient>(),
                     interactionServiceConfig))
             .AddSingleton<ApiService>()
+            .AddSingleton<AmazonS3Service>()
             .AddHostedService<InteractionHandlingService>()
             .AddSingleton<BackgroundScheduler>()
             .AddSingleton<PostTopMonthCommentsScheduledTask>()

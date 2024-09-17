@@ -8,5 +8,11 @@
   },
   "ApiOptions": {
     "BaseUrl": "your api url with a trailing slash"
+  },
+  "AmazonS3Options": {
+    "BucketName": "your-bucket-name",
+    "Region": "your-aws-region",
+    "aws_access_key_id": "your-aws",
+    "aws_secret_access_key": "your-aws",
   }
 }
