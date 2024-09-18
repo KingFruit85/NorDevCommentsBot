@@ -8,43 +8,30 @@ using NorDevBestOfBot.Services.Scheduling;
 
 namespace NorDevBestOfBot;
 
-public class Startup : IHostedService
+public class Startup(
+    DiscordSocketClient discord,
+    IOptions<BotOptions> botOptions,
+    ILogger<DiscordSocketClient> logger,
+    BackgroundScheduler backgroundScheduler,
+    PostTopMonthCommentsScheduledTask postTopMonthCommentsScheduledTask)
+    : IHostedService
 {
-    private readonly BackgroundScheduler _backgroundScheduler;
-    private readonly IOptions<BotOptions> _botOptions;
-    private readonly DiscordSocketClient _discord;
-    private readonly ILogger<DiscordSocketClient> _logger;
-    private readonly PostTopMonthCommentsScheduledTask _postTopMonthCommentsScheduledTask;
-
-    public Startup(DiscordSocketClient discord,
-        IOptions<BotOptions> botOptions,
-        ILogger<DiscordSocketClient> logger,
-        BackgroundScheduler backgroundScheduler,
-        PostTopMonthCommentsScheduledTask postTopMonthCommentsScheduledTask)
-    {
-        _discord = discord;
-        _botOptions = botOptions;
-        _logger = logger;
-        _backgroundScheduler = backgroundScheduler;
-        _postTopMonthCommentsScheduledTask = postTopMonthCommentsScheduledTask;
-    }
-
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Logging in...");
-        await _discord.LoginAsync(TokenType.Bot, _botOptions.Value.Token);
-        await _discord.StartAsync();
+        logger.LogDebug("Logging in...");
+        await discord.LoginAsync(TokenType.Bot, botOptions.Value.Token);
+        await discord.StartAsync();
 
-        _logger.LogDebug("Starting background scheduler...");
-        _backgroundScheduler.ScheduleJob("month-top-comments", "0 12 28 * *",
-            async () => await _postTopMonthCommentsScheduledTask.ExecuteAsync());
+        logger.LogDebug("Starting background scheduler...");
+        backgroundScheduler.ScheduleJob("month-top-comments", "0 12 28 * *",
+            async () => await postTopMonthCommentsScheduledTask.ExecuteAsync());
 
         await Task.Delay(-1, cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await _discord.LogoutAsync();
-        await _discord.StopAsync();
+        await discord.LogoutAsync();
+        await discord.StopAsync();
     }
 }

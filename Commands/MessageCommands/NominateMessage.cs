@@ -127,6 +127,7 @@ public class NominateMessage(
             if (refrencedMessage.Embeds.Count > 1)
                 foreach (var e in refrencedMessage.Embeds)
                 {
+                    if (e.Image?.Url is null) continue;
                     Console.WriteLine(@$"Attempting to upload image embed {e.Image.Value.Url} to s3");
                     amazonS3Service.UploadImageToS3FromUrlInBackground(e.Image.Value.Url);
                     var em = new EmbedBuilder()
@@ -247,7 +248,13 @@ public class NominateMessage(
                     "Take me to the post 📫",
                     style: ButtonStyle.Link,
                     url: nominatedMessageLink,
+                    row: 1)
+                .WithButton(
+                    "🌐",
+                    style: ButtonStyle.Link,
+                    url: $"https://ephemeral-dieffenbachia-1b47c2.netlify.app/",
                     row: 1);
+            
             Console.WriteLine(@"Posting message to Lobby");
 
             await generalChannel.SendMessageAsync(

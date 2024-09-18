@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NorDevBestOfBot;
+using NorDevBestOfBot.BatchJobs;
 using NorDevBestOfBot.Extensions;
 using NorDevBestOfBot.Models.Options;
 using NorDevBestOfBot.Services;
@@ -53,6 +54,8 @@ using var host = Host.CreateDefaultBuilder(args)
             .AddHostedService<InteractionHandlingService>()
             .AddSingleton<BackgroundScheduler>()
             .AddSingleton<PostTopMonthCommentsScheduledTask>()
+            .AddSingleton<BulkImageUpload>()
+            .AddSingleton<Helpers>()
             .AddHostedService<Startup>();
     })
     .Build();

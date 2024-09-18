@@ -14,7 +14,7 @@ public class BackgroundScheduler
         var nextOccurrence = cron.GetNextOccurrence(DateTimeOffset.Now, TimeZoneInfo.Local);
         var timespan = nextOccurrence - DateTimeOffset.Now;
 
-        timer.Interval = timespan.Value.TotalMilliseconds;
+        if (timespan != null) timer.Interval = timespan.Value.TotalMilliseconds;
         timer.Elapsed += async (_, _) =>
         {
             try

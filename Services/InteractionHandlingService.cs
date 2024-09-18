@@ -5,33 +5,34 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NorDevBestOfBot.BatchJobs;
 using NorDevBestOfBot.Models.Options;
 
 namespace NorDevBestOfBot.Services;
 
 public class InteractionHandlingService : IHostedService
 {
-    private readonly IConfiguration _config;
     private readonly DiscordSocketClient _discord;
     private readonly InteractionService _interactions;
     private readonly ILogger<InteractionService> _logger;
     private readonly IOptions<ServerOptions> _serverOptions;
     private readonly IServiceProvider _services;
+    private readonly BulkImageUpload bulkImageUpload;
 
     public InteractionHandlingService(
         DiscordSocketClient discord,
         InteractionService interactions,
         IServiceProvider services,
-        IConfiguration config,
         ILogger<InteractionService> logger,
-        IOptions<ServerOptions> serverOptions)
+        IOptions<ServerOptions> serverOptions,
+        BulkImageUpload bulkImageUpload)
     {
         _discord = discord;
         _interactions = interactions;
         _services = services;
-        _config = config;
         _logger = logger;
         _serverOptions = serverOptions;
+        this.bulkImageUpload = bulkImageUpload;
 
         _interactions.Log += msg =>
         {
@@ -45,10 +46,18 @@ public class InteractionHandlingService : IHostedService
         _discord.Ready += () =>
         {
             _logger.LogInformation("Bot is connected and ready.");
+            // _logger.LogDebug("Starting bulk image upload to s3...");
+            // try
+            // {
+            //     bulkImageUpload.BuckUploadInBackground(_discord);
+            // }
+            // catch (Exception e)
+            // {
+            //     _logger.LogError("unable to run bulk upload: {}", e.Message);
+            // }
             return _interactions.RegisterCommandsToGuildAsync(_serverOptions.Value.GuildId);
         };
 
-        // _discord.InteractionCreated += OnInteractionAsync;
         _discord.SlashCommandExecuted += SlashCommandExecuted;
         _discord.ButtonExecuted += ButtonComponentExecuted;
         _discord.MessageCommandExecuted += MessageCommandExecuted;
@@ -74,7 +83,7 @@ public class InteractionHandlingService : IHostedService
         catch (Exception ex)
         {
             if (!context.Interaction.HasResponded)
-                await context.Interaction.RespondAsync($"An error occoured: {ex.Message}", ephemeral: true);
+                await context.Interaction.RespondAsync($"An error occurred: {ex.Message}", ephemeral: true);
         }
     }
 
@@ -90,7 +99,7 @@ public class InteractionHandlingService : IHostedService
         catch (Exception ex)
         {
             if (!context.Interaction.HasResponded)
-                await context.Interaction.RespondAsync($"An error occoured: {ex.Message}", ephemeral: true);
+                await context.Interaction.RespondAsync($"An error occurred: {ex.Message}", ephemeral: true);
         }
     }
 
@@ -106,25 +115,7 @@ public class InteractionHandlingService : IHostedService
         catch (Exception ex)
         {
             if (!context.Interaction.HasResponded)
-                await context.Interaction.RespondAsync($"An error occoured: {ex.Message}", ephemeral: true);
+                await context.Interaction.RespondAsync($"An error occurred: {ex.Message}", ephemeral: true);
         }
     }
-
-    // private async Task OnInteractionAsync(SocketInteraction interaction)
-    // {
-    //     try
-    //     {
-    //         var context = new SocketInteractionContext(_discord, interaction);
-    //         var result = await _interactions.ExecuteCommandAsync(context, _services);
-    //
-    //         if (!result.IsSuccess)
-    //             await context.Channel.SendMessageAsync(result.ToString());
-    //     }
-    //     catch
-    //     {
-    //         if (interaction.Type == InteractionType.ApplicationCommand)
-    //             await interaction.GetOriginalResponseAsync()
-    //                 .ContinueWith(msg => msg.Result.DeleteAsync());
-    //     }
-    // }
 }

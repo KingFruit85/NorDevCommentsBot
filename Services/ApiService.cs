@@ -19,9 +19,46 @@ public class ApiService
         _logger = logger;
     }
 
+    public async Task<bool> UpsertMessageAsync(Comment comment)
+    {
+        // Retrieve the API key from environment variables
+        var apiKey = Environment.GetEnvironmentVariable("API_KEY");
+
+        if (string.IsNullOrEmpty(apiKey) || string.IsNullOrWhiteSpace(apiKey))
+        {
+            _logger.LogError("API key is not set in environment variables");
+            return false;
+        }
+
+        // Create a new HttpRequestMessage
+        var request = new HttpRequestMessage(HttpMethod.Post, "messages/upsertmessage");
+
+        // Add the API key to the request headers
+        request.Headers.Add("X-API-Key", apiKey);
+
+        // Set the content of the request
+        request.Content = JsonContent.Create(comment);
+
+        // Send the request
+        var response = await _httpClient.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError($"POST request failed with status code: {response.StatusCode}");
+            _logger.LogError($"Request message: {response.RequestMessage}, headers: {response.Content.Headers}");
+        }
+
+        return response.IsSuccessStatusCode;
+    }
+
     public async Task<Comment?> GetRandomComment()
     {
         return await GetFromJsonAsync<Comment?>("messages/random");
+    }
+
+    public async Task<List<Comment>?> GetAllComments()
+    {
+        return await GetFromJsonAsync<List<Comment>?>("messages/");
     }
 
     public async Task<List<Comment>?> GetThisMonthsComments()

@@ -1,10 +1,81 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 
 namespace NorDevBestOfBot;
 
-public class Helpers
+public class Helpers(ILogger<Helpers> logger)
 {
+    public async Task<string> GetImageUrlFromMessage(DiscordSocketClient client, string messageLink)
+    {
+        var (_, _, message) = await GetObjectsFromMessageLinkPartsAsync(client, messageLink);
+        if (message is null)
+        {
+            logger.LogInformation("no message found");
+            return string.Empty;
+        }
+
+        try
+        {
+            return message.Attachments.First().Url;
+        }
+        catch (Exception e)
+        {
+            logger.LogInformation("no image found {e}", e.Message);
+            return string.Empty;
+        }
+    }
+
+    private async Task<(SocketGuild? server, SocketTextChannel? channel, IMessage? message)> 
+        GetObjectsFromMessageLinkPartsAsync(DiscordSocketClient client, string messageLink)
+    {
+        try
+        {
+            var parts = messageLink.Split('/');
+            if (parts.Length < 7)
+            {
+                logger.LogError("Invalid message link format: {MessageLink}", messageLink);
+                return (null, null, null);
+            }
+
+            if (!ulong.TryParse(parts[4], out var guildId) ||
+                !ulong.TryParse(parts[5], out var channelId) ||
+                !ulong.TryParse(parts[6], out var messageId))
+            {
+                logger.LogError("Failed to parse IDs from message link: {MessageLink}", messageLink);
+                return (null, null, null);
+            }
+
+            var guild = client.GetGuild(guildId);
+            if (guild == null)
+            {
+                logger.LogError("Guild with ID {GuildId} not found", guildId);
+                return (null, null, null);
+            }
+
+            var channel = guild.GetTextChannel(channelId);
+            if (channel == null)
+            {
+                logger.LogError("Channel with ID {ChannelId} not found in server {ServerName}", channelId, guild.Name);
+                return (null, null, null);
+            }
+
+            var message = await channel.GetMessageAsync(messageId);
+            if (message == null)
+            {
+                logger.LogError("Message with ID {MessageId} not found in channel {ChannelName}", messageId, channel.Name);
+                return (null, null, null);
+            }
+
+            return (guild, channel, message);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error processing message link: {MessageLink}", messageLink);
+            return (null, null, null);
+        }
+    }
+
     public static string GetFileNameFromDiscordUrl(string url)
     {
         // Remove query parameters
