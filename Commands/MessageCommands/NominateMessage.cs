@@ -61,21 +61,26 @@ public class NominateMessage(
 
         var voteButtons = new ComponentBuilder()
             .WithButton(
-                "I Agree 👍🏻",
+                "👍🏻",
                 $"vote:true,{nominatedMessageLink}",
                 ButtonStyle.Success,
                 row: 0)
             .WithButton(
-                "I Disagree 💩",
+                "💩",
                 $"vote:false,{nominatedMessageLink}",
                 ButtonStyle.Danger,
                 row: 0)
             .WithButton(
-                "ℹ️ - What's this?",
-                "info_button");
+                "❔",
+                "info_button")
+            .WithButton(
+                "🌐",
+                style: ButtonStyle.Link,
+                url: "https://ephemeral-dieffenbachia-1b47c2.netlify.app/",
+                row: 0);
 
         // Create a list of embeds that we will include with the response
-        List<Embed> embeds = new();
+        List<Embed> embeds = [];
 
         // Check if the message references another message, if it does we'll want to post that first
         if (refrencedMessage is not null)
@@ -102,7 +107,7 @@ public class NominateMessage(
                 {
                     Console.WriteLine(@$"Attempting to upload image embed {refEmbed.Image.Value.Url} to s3");
                     amazonS3Service.UploadImageToS3FromUrlInBackground(refEmbed.Image.Value.Url);
-                    
+
                     e.WithImageUrl(refEmbed.Image.Value.Url);
                     embeds.Add(e.Build());
                 }
@@ -117,7 +122,7 @@ public class NominateMessage(
                 {
                     Console.WriteLine(@$"Attempting to upload image embed {e.Url} to s3");
                     amazonS3Service.UploadImageToS3FromUrlInBackground(refAttach.Url);
-                    
+
                     e.WithImageUrl(refAttach.Url);
                     embeds.Add(e.Build());
                 }
@@ -241,20 +246,16 @@ public class NominateMessage(
         // Post to the general channel if the nominated message didn't originate in the general channel
         var generalChannel = Context.Client.GetChannel(generalChannelId) as ITextChannel;
 
-        if (generalChannel is not null && Context.Channel.Id != generalChannel.Id &&  Context.Interaction.User.Id != ChrisUserId)
+        if (generalChannel is not null && Context.Channel.Id != generalChannel.Id &&
+            Context.Interaction.User.Id != ChrisUserId)
         {
-            var messageLinkButton = voteButtons
+            var messageLinkButton = new ComponentBuilder()
                 .WithButton(
                     "Take me to the post 📫",
                     style: ButtonStyle.Link,
                     url: nominatedMessageLink,
-                    row: 1)
-                .WithButton(
-                    "🌐",
-                    style: ButtonStyle.Link,
-                    url: $"https://ephemeral-dieffenbachia-1b47c2.netlify.app/",
-                    row: 1);
-            
+                    row: 0);
+                
             Console.WriteLine(@"Posting message to Lobby");
 
             await generalChannel.SendMessageAsync(

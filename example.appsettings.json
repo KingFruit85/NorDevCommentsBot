@@ -13,6 +13,9 @@
     "BucketName": "your-bucket-name",
     "Region": "your-aws-region",
     "aws_access_key_id": "your-aws",
-    "aws_secret_access_key": "your-aws",
+    "aws_secret_access_key": "your-aws"
+  },
+  "CloudinaryOptions": {
+    "CLOUDINARY_URL": "your-cloud-name"
   }
 }

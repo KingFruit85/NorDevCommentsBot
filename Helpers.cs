@@ -6,6 +6,18 @@ namespace NorDevBestOfBot;
 
 public class Helpers(ILogger<Helpers> logger)
 {
+    public async Task<IMessage?> GetCommentFromMessageLinkAsync(DiscordSocketClient client, string messageLink)
+    {
+        var (_, _, message) = await GetObjectsFromMessageLinkPartsAsync(client, messageLink);
+        if (message is not null)
+        {
+            return message;
+        }
+
+        logger.LogInformation("no message found");
+        return null;
+    }
+
     public async Task<string> GetImageUrlFromMessage(DiscordSocketClient client, string messageLink)
     {
         var (_, _, message) = await GetObjectsFromMessageLinkPartsAsync(client, messageLink);
@@ -22,11 +34,13 @@ public class Helpers(ILogger<Helpers> logger)
         catch (Exception e)
         {
             logger.LogInformation("no image found {e}", e.Message);
+            logger.LogInformation("message attachment count: {attachmentCount}", message.Attachments.Count);
+            logger.LogInformation("message embed count: {embedCount}", message.Embeds.Count);
             return string.Empty;
         }
     }
 
-    private async Task<(SocketGuild? server, SocketTextChannel? channel, IMessage? message)> 
+    private async Task<(SocketGuild? server, SocketTextChannel? channel, IMessage? message)>
         GetObjectsFromMessageLinkPartsAsync(DiscordSocketClient client, string messageLink)
     {
         try
@@ -63,7 +77,8 @@ public class Helpers(ILogger<Helpers> logger)
             var message = await channel.GetMessageAsync(messageId);
             if (message == null)
             {
-                logger.LogError("Message with ID {MessageId} not found in channel {ChannelName}", messageId, channel.Name);
+                logger.LogError("Message with ID {MessageId} not found in channel {ChannelName}", messageId,
+                    channel.Name);
                 return (null, null, null);
             }
 

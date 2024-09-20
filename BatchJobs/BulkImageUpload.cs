@@ -1,3 +1,4 @@
+using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using NorDevBestOfBot.Services;
@@ -6,6 +7,7 @@ namespace NorDevBestOfBot.BatchJobs;
 
 public class BulkImageUpload(
     ApiService apiService,
+    CloudinaryService cloudinaryService,
     AmazonS3Service amazonS3Service,
     ILogger<BulkImageUpload> logger,
     Helpers helpers)
@@ -36,29 +38,87 @@ public class BulkImageUpload(
                 {
                     logger.LogInformation("reading comment {MessageLink}", comment.messageLink);
                     var timestamp = comment.dateOfSubmission.ToString("dd-MM-yyyyTHH-mm-ss");
-                    if (comment.imageUrl is not null && comment.messageLink is not null)
+                    if (!string.IsNullOrWhiteSpace(comment.imageUrl) && comment.messageLink is not null)
                     {
+                        // get the message object
+                        var originalComment = await helpers.GetCommentFromMessageLinkAsync(client, comment.messageLink);
+
+                        if (originalComment is null)
+                        {
+                            logger.LogInformation("Original comment not found for {MessageLink}", comment.messageLink);
+                            continue;
+                        }
+
                         logger.LogInformation("Attempting to get imageUrl from {MessageLink}", comment.messageLink);
                         var imageUrl = await helpers.GetImageUrlFromMessage(client, comment.messageLink);
                         if (!string.IsNullOrWhiteSpace(imageUrl))
                         {
-                            var s3ImageUrl = await amazonS3Service.UploadImageViaUrlAsync(imageUrl, timestamp);
+                            var result = await cloudinaryService.UploadImageAndReturnCompressedImageUrl(imageUrl);
+                            
+                            var imageUrlToUse = result ?? imageUrl;
+
+                            logger.LogInformation("decided to use the following URL: {ImageUrl}", imageUrlToUse);
+                            
+                            var s3ImageUrl = await amazonS3Service.UploadImageViaUrlAsync(imageUrlToUse, timestamp);
+                            
                             // call the upset endpoint to update the comment with the s3ImageUrl
-                            await apiService.UpsertMessageAsync(comment with { s3ImageUrl = s3ImageUrl });
+                            await apiService.UpsertMessageAsync(comment with
+                            {
+                                s3ImageUrl = s3ImageUrl,
+                                userName = originalComment.Author.Username,
+                                userTag = originalComment.Author.Discriminator,
+                                iconUrl = originalComment.Author.GetAvatarUrl(),
+                                nickname = originalComment.Author.Username,
+                                comment = originalComment.Content
+                            });
                         }
                     }
 
-                    if (comment.quotedMessageImage is not null && comment.quotedMessageMessageLink is not null)
+                    if (!string.IsNullOrWhiteSpace(comment.quotedMessage))
                     {
-                        logger.LogInformation(
-                            "Attempting to get the quoted message imageUrl from {QuotedMessageMessageLink}",
-                            comment.quotedMessageMessageLink);
-                        var imageUrl =
-                            await helpers.GetImageUrlFromMessage(client, comment.quotedMessageMessageLink);
-                        if (!string.IsNullOrWhiteSpace(imageUrl))
+                        // This is required because the database had a bug where the quoted message details were not saved
+                        // need to retrieve the quoted message link, I think it's probably more reliable to get this from the original comment
+
+                        if (comment.messageLink != null)
                         {
-                            var s3ImageUrl = await amazonS3Service.UploadImageViaUrlAsync(imageUrl, timestamp);
-                            await apiService.UpsertMessageAsync(comment with { s3QuotedMessageImageUrl = s3ImageUrl });
+                            var originalComment =
+                                await helpers.GetCommentFromMessageLinkAsync(client, comment.messageLink);
+
+                            if (originalComment is null)
+                            {
+                                logger.LogInformation("Original comment not found for {MessageLink}",
+                                    comment.messageLink);
+                                continue;
+                            }
+
+                            var referenceMessageId = originalComment.Reference.MessageId;
+                            var refMessage = await originalComment.Channel.GetMessageAsync((ulong)referenceMessageId);
+                            var refMessageLink = refMessage.GetJumpUrl();
+                            logger.LogInformation(
+                                "Attempting to get the quoted message imageUrl from {QuotedMessageMessageLink}",
+                                refMessageLink);
+
+                            var imageUrl =
+                                await helpers.GetImageUrlFromMessage(client, refMessageLink);
+
+                            if (!string.IsNullOrWhiteSpace(imageUrl))
+                            {
+                                var result = await cloudinaryService.UploadImageAndReturnCompressedImageUrl(imageUrl);
+                            
+                                var imageUrlToUse = result ?? imageUrl;
+
+                                logger.LogInformation("decided to use the following URL: {ImageUrl}", imageUrlToUse);
+                                
+                                var s3ImageUrl = await amazonS3Service.UploadImageViaUrlAsync(imageUrlToUse, timestamp);
+                                await apiService.UpsertMessageAsync(comment with
+                                {
+                                    s3QuotedMessageImageUrl = s3ImageUrl,
+                                    quotedMessageAuthor = refMessage.Author.Username,
+                                    quotedMessageAvatarLink = refMessage.Author.GetAvatarUrl(),
+                                    quotedMessageMessageLink = refMessageLink,
+                                    quotedMessage = refMessage.Content
+                                });
+                            }
                         }
                     }
                 }

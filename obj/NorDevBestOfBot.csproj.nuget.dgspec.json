@@ -52,6 +52,10 @@
               "target": "Package",
               "version": "[3.7.402.12, )"
             },
+            "CloudinaryDotNet": {
+              "target": "Package",
+              "version": "[1.26.2, )"
+            },
             "Cronos": {
               "target": "Package",
               "version": "[0.8.4, )"
