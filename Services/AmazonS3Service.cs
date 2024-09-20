@@ -15,8 +15,14 @@ public class AmazonS3Service(
     private readonly AmazonS3Client _client = new();
     private readonly AmazonS3Options _awsS3Options = awsS3Options.Value;
 
-    public async Task<string> UploadImageViaUrlAsync(string imageUrl, string overrideDate = "")
+    public async Task<string?> UploadImageViaUrlAsync(string? imageUrl, string overrideDate = "")
     {
+        if (imageUrl is null)
+        {
+            logger.LogError("No image URL provided to upload to S3");
+            return null;
+        }
+        
         var s3Url = "";
         try
         {

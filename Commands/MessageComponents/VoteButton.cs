@@ -9,30 +9,29 @@ using NorDevBestOfBot.Services;
 namespace NorDevBestOfBot.Commands.MessageComponents;
 
 public class VoteButton(
-    DiscordSocketClient client, 
-    ApiService apiservice) : InteractionModuleBase<SocketInteractionContext<SocketMessageComponent>>
+    DiscordSocketClient client,
+    ApiService apiService,
+    CloudinaryService cloudinaryService,
+    AmazonS3Service amazonS3Service) : InteractionModuleBase<SocketInteractionContext<SocketMessageComponent>>
 {
-    private readonly ApiService _apiService = apiservice;
-    private readonly DiscordSocketClient _client = client;
-
     [ComponentInteraction("vote:*,*")]
     public async Task Handle(bool isVote, string nominatedMessageLink)
     {
         await DeferAsync();
-        
+
         var parts = nominatedMessageLink.Split('/');
-        
+
         var serverId = parts[4];
         var channelId = parts[5];
         var messageId = parts[6];
 
-        var server = _client.GetGuild(ulong.Parse(serverId));
+        var server = client.GetGuild(ulong.Parse(serverId));
         var channel = server.GetTextChannel(ulong.Parse(channelId));
         var message = await channel.GetMessageAsync(ulong.Parse(messageId));
 
         var voteCountToAdd = isVote ? 1 : -1;
 
-        var persistedMessage = await _apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink);
+        var persistedMessage = await apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink);
 
         if (persistedMessage is not null && persistedMessage.voters!.Contains(Context.User.Username))
         {
@@ -51,7 +50,8 @@ public class VoteButton(
                 Console.WriteLine(@"sending addvotetomessage POST");
 
                 var isVoteAdded =
-                    await _apiService.AddVoteToMessage(nominatedMessageLink.Trim(), Context.Interaction.User.Username, isVote);
+                    await apiService.AddVoteToMessage(nominatedMessageLink.Trim(), Context.Interaction.User.Username,
+                        isVote);
 
                 if (isVoteAdded)
                 {
@@ -89,8 +89,9 @@ public class VoteButton(
             voteCount = voteCountToAdd,
             iconUrl = message.Author.GetAvatarUrl(),
             dateOfSubmission = DateTime.UtcNow,
-            voters = new List<string> { Context.Interaction.User.Username },
+            voters = [Context.Interaction.User.Username],
             imageUrl = "",
+            s3ImageUrl = "",
             quotedMessage = "",
             quotedMessageAuthor = "",
             quotedMessageAvatarLink = "",
@@ -106,10 +107,28 @@ public class VoteButton(
         if (message.Attachments.Count > 0 || message.Embeds.Count > 0)
         {
             attachmentUrls.AddRange(message.Attachments.Select(attachment => attachment.Url));
-
             attachmentUrls.AddRange(message.Embeds.Select(embed => embed.Url));
 
-            if (attachmentUrls.Any()) comment.imageUrl = string.Join(",", attachmentUrls);
+            if (attachmentUrls.Count != 0)
+            {
+                // iterate over the attachments and call the image cloudiany service to get a compressed image url then upload to s3
+                foreach (var url in attachmentUrls)
+                {
+                    var compressedImageUrl = await cloudinaryService.UploadImageAndReturnCompressedImageUrl(url);
+                    var s3Url = await amazonS3Service.UploadImageViaUrlAsync(compressedImageUrl);
+
+                    if (!string.IsNullOrEmpty(s3Url))
+                    {
+                        comment.s3ImageUrl = s3Url;
+                    }
+                    else
+                    {
+                        comment.s3ImageUrl = url;
+                    }
+                }
+
+                comment.imageUrl = string.Join(",", attachmentUrls);
+            }
         }
 
         // Do the same if the message refs another message
@@ -134,8 +153,26 @@ public class VoteButton(
 
                     quotedMessageAttachmentUrls.AddRange(refrencedMessage.Embeds.Select(embed => embed.Url));
 
-                    if (quotedMessageAttachmentUrls.Any())
+                    if (quotedMessageAttachmentUrls.Count != 0)
+                    {
+                        foreach (var url in quotedMessageAttachmentUrls)
+                        {
+                            var compressedImageUrl =
+                                await cloudinaryService.UploadImageAndReturnCompressedImageUrl(url);
+
+                            if (!string.IsNullOrEmpty(compressedImageUrl))
+                            {
+                                var s3Url = await amazonS3Service.UploadImageViaUrlAsync(compressedImageUrl);
+                                comment.s3QuotedMessageImageUrl = s3Url;
+                            }
+                            else
+                            {
+                                comment.s3QuotedMessageImageUrl = url;
+                            }
+                        }
+
                         comment.quotedMessageImage = string.Join(",", quotedMessageAttachmentUrls);
+                    }
                 }
             }
         }
@@ -147,7 +184,7 @@ public class VoteButton(
             var content = new StringContent(data, Encoding.UTF8, "application/json");
 
             Console.WriteLine($@"creating new record with following content {data}");
-            var isCommentSavedSuccessfully = await _apiService.SaveComment(content);
+            var isCommentSavedSuccessfully = await apiService.SaveComment(content);
 
             if (isCommentSavedSuccessfully)
             {
