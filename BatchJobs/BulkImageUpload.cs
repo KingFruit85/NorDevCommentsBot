@@ -65,6 +65,7 @@ public class BulkImageUpload(
                             await apiService.UpsertMessageAsync(comment with
                             {
                                 s3ImageUrl = s3ImageUrl,
+                                imageUrl = originalComment.Attachments.First().Url,
                                 userName = originalComment.Author.Username,
                                 userTag = originalComment.Author.Discriminator,
                                 iconUrl = originalComment.Author.GetAvatarUrl(),

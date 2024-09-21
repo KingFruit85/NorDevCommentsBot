@@ -57,6 +57,7 @@ using var host = Host.CreateDefaultBuilder(args)
             .AddSingleton<BackgroundScheduler>()
             .AddSingleton<PostTopMonthCommentsScheduledTask>()
             .AddSingleton<BulkImageUpload>()
+            .AddSingleton<RefreshAllCommentDocuments>()
             .AddSingleton<Helpers>()
             .AddHostedService<Startup>();
     })

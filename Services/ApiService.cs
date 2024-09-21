@@ -44,8 +44,8 @@ public class ApiService
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogError($"POST request failed with status code: {response.StatusCode}");
-            _logger.LogError($"Request message: {response.RequestMessage}, headers: {response.Content.Headers}");
+            _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
+            _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,response.Content.Headers );
         }
 
         return response.IsSuccessStatusCode;
@@ -88,13 +88,11 @@ public class ApiService
 
     public async Task<Comment?> CheckIfMessageAlreadyPersistedAsync(string messageLink)
     {
-        Console.WriteLine(@"Checking if message has already been persisted");
+        _logger.LogInformation("Checking if message has already been persisted");
         var response = await GetFromJsonAsync<Comment?>($"messages/GetMessageByMessageLink?id={messageLink}");
+        if (response is null) _logger.LogError("message not found");
 
-        if (response != null) return response;
-
-        Console.WriteLine(@"message not found");
-        return null;
+        return response ?? null;
     }
 
     public async Task<bool> AddVoteToMessage(string messageLink, string username, bool isVote)
@@ -107,7 +105,8 @@ public class ApiService
             var response = await _httpClient.PostAsync(url, null);
             if (!response.IsSuccessStatusCode)
                 _logger.LogError(
-                    $"something went wrong Request message: {response.RequestMessage}, headers: {response.Content.Headers}");
+                    "something went wrong Request message: {message}, headers: {headers}", response.RequestMessage,
+                    response.Content.Headers);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -123,14 +122,13 @@ public class ApiService
         try
         {
             var response = await _httpClient.PostAsync("messages/savecomment", content);
-            Console.WriteLine($@"Response: {response}");
+            _logger.LogInformation("Response: {response}", response);
 
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError($"POST request failed with status code: {response.StatusCode}");
-                _logger.LogError(
-                    $"something went wrong Request message: {response.RequestMessage}, headers: {response.Content.Headers}");
-            }
+            if (response.IsSuccessStatusCode) return response.IsSuccessStatusCode;
+            _logger.LogError("POST request failed with status code: {code}", response.StatusCode);
+            _logger.LogError(
+                "something went wrong Request message: {message}, headers: {headers}", response.RequestMessage,
+                response.Content.Headers);
 
             return response.IsSuccessStatusCode;
         }
@@ -146,11 +144,10 @@ public class ApiService
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<T>(endpoint);
+            return await _httpClient.GetFromJsonAsync<T>(endpoint) ?? default;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, ex.Message);
             return default;
         }
     }
