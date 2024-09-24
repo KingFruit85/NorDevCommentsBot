@@ -9,12 +9,10 @@ namespace NorDevBestOfBot.Commands.SlashCommands;
 public class GetTopTenUsersByPostCount : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     private readonly ApiService _apiService;
-    private readonly ILogger<GetTopTenUsersByPostCount> _logger;
 
     public GetTopTenUsersByPostCount(ApiService apiService, ILogger<GetTopTenUsersByPostCount> logger)
     {
         _apiService = apiService;
-        _logger = logger;
     }
 
     [SlashCommand("get-top-ten-users-by-post-count", "Gets the top ten users ordered by the sum of their vote counts.")]
@@ -24,7 +22,7 @@ public class GetTopTenUsersByPostCount : InteractionModuleBase<SocketInteraction
 
         var embed = new EmbedBuilder()
             .WithTitle("The top ten users by total 📫 post 📫 count");
-        var response = await _apiService.GetTopTenUsersByPostCount();
+        var response = await _apiService.GetTopTenUsersByPostCount(Context.Guild.Id);
 
         if (response is null || response!.Count < 1)
             await FollowupAsync("No user voting history was found for this server");

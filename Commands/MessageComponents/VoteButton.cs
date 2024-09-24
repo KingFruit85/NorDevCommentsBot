@@ -5,6 +5,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using NorDevBestOfBot.Models;
 using NorDevBestOfBot.Services;
+using static System.Console;
 
 namespace NorDevBestOfBot.Commands.MessageComponents;
 
@@ -21,21 +22,21 @@ public class VoteButton(
 
         var parts = nominatedMessageLink.Split('/');
 
-        var serverId = parts[4];
+        var guildId = parts[4];
         var channelId = parts[5];
         var messageId = parts[6];
 
-        var server = client.GetGuild(ulong.Parse(serverId));
-        var channel = server.GetTextChannel(ulong.Parse(channelId));
+        var guild = client.GetGuild(ulong.Parse(guildId));
+        var channel = guild.GetTextChannel(ulong.Parse(channelId));
         var message = await channel.GetMessageAsync(ulong.Parse(messageId));
 
         var voteCountToAdd = isVote ? 1 : -1;
 
-        var persistedMessage = await apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink);
+        var persistedMessage = await apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink, Context.Guild.Id);
 
         if (persistedMessage is not null && persistedMessage.voters!.Contains(Context.User.Username))
         {
-            Console.WriteLine(@"message found in the database");
+            WriteLine(@"message found in the database");
             await FollowupAsync(
                 $"You've already voted for this message!, it currently has {persistedMessage.voteCount} votes",
                 ephemeral: true);
@@ -46,16 +47,16 @@ public class VoteButton(
         if (persistedMessage is not null && !persistedMessage.voters!.Contains(Context.User.Username))
             try
             {
-                Console.WriteLine(@"preparing message to POST");
-                Console.WriteLine(@"sending addvotetomessage POST");
+                WriteLine(@"preparing message to POST");
+                WriteLine(@"sending addvotetomessage POST");
 
                 var isVoteAdded =
                     await apiService.AddVoteToMessage(nominatedMessageLink.Trim(), Context.Interaction.User.Username,
-                        isVote);
+                        isVote, Context.Guild.Id);
 
                 if (isVoteAdded)
                 {
-                    Console.WriteLine(@"addvotetomessage Success");
+                    WriteLine(@"addvotetomessage Success");
 
                     var isPlural = persistedMessage.voteCount + voteCountToAdd == 1 ? "" : "s";
 
@@ -82,7 +83,7 @@ public class VoteButton(
         {
             messageLink = nominatedMessageLink.Trim(),
             messageId = messageId,
-            serverId = serverId,
+            serverId = guildId,
             userName = message.Author.Username,
             userTag = message.Author.Username,
             comment = message.Content,
@@ -117,14 +118,7 @@ public class VoteButton(
                     var compressedImageUrl = await cloudinaryService.UploadImageAndReturnCompressedImageUrl(url);
                     var s3Url = await amazonS3Service.UploadImageViaUrlAsync(compressedImageUrl);
 
-                    if (!string.IsNullOrEmpty(s3Url))
-                    {
-                        comment.s3ImageUrl = s3Url;
-                    }
-                    else
-                    {
-                        comment.s3ImageUrl = url;
-                    }
+                    comment.s3ImageUrl = !string.IsNullOrEmpty(s3Url) ? s3Url : url;
                 }
 
                 comment.imageUrl = string.Join(",", attachmentUrls);
@@ -177,14 +171,13 @@ public class VoteButton(
             }
         }
 
-
         try
         {
             var data = JsonSerializer.Serialize(comment);
             var content = new StringContent(data, Encoding.UTF8, "application/json");
-
-            Console.WriteLine($@"creating new record with following content {data}");
-            var isCommentSavedSuccessfully = await apiService.SaveComment(content);
+            WriteLine($"the guildid from guild context is {Context.Guild.Id}");
+            WriteLine($@"creating new record with following content {data}");
+            var isCommentSavedSuccessfully = await apiService.SaveComment(content, Context.Guild.Id);
 
             if (isCommentSavedSuccessfully)
             {
@@ -200,7 +193,7 @@ public class VoteButton(
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            WriteLine(ex.Message);
             await FollowupAsync("Something unexpected happened!, Chris isn't very good at this is he?");
         }
     }

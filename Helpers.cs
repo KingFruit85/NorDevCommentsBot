@@ -6,6 +6,21 @@ namespace NorDevBestOfBot;
 
 public class Helpers(ILogger<Helpers> logger)
 {
+    
+    public ulong GetGuildIdFromMessageLink(string messageLink)
+    {
+        var parts = messageLink.Split('/');
+        if (parts.Length < 7)
+        {
+            logger.LogError("Invalid message link format: {MessageLink}", messageLink);
+            return 0;
+        }
+
+        if (ulong.TryParse(parts[4], out var guildId)) return guildId;
+        logger.LogError("Failed to parse guild ID from message link: {MessageLink}", messageLink);
+        return 0;
+    }
+    
     public async Task<IMessage?> GetCommentFromMessageLinkAsync(DiscordSocketClient client, string messageLink)
     {
         var (_, _, message) = await GetObjectsFromMessageLinkPartsAsync(client, messageLink);

@@ -1,7 +1,6 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Microsoft.Extensions.Logging;
 using NorDevBestOfBot.Extensions;
 using NorDevBestOfBot.Services;
 
@@ -11,14 +10,11 @@ public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext<
 {
     private readonly ApiService _apiService;
     private readonly DiscordSocketClient _client;
-    private readonly ILogger<GetTopTenComments> _logger;
 
     public GetTopTenComments(ApiService apiService,
-        ILogger<GetTopTenComments> logger,
         DiscordSocketClient client)
     {
         _apiService = apiService;
-        _logger = logger;
         _client = client;
     }
 
@@ -32,7 +28,7 @@ public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext<
 
         try
         {
-            var response = await _apiService.GetTopTenComments();
+            var response = await _apiService.GetTopTenComments(Context.Guild.Id);
 
             if (response is null)
             {

@@ -55,8 +55,6 @@ using var host = Host.CreateDefaultBuilder(args)
             .AddSingleton<CloudinaryService>()
             .AddHostedService<InteractionHandlingService>()
             .AddSingleton<BackgroundScheduler>()
-            .AddSingleton<PostTopMonthCommentsScheduledTask>()
-            .AddSingleton<BulkImageUpload>()
             .AddSingleton<RefreshAllCommentDocuments>()
             .AddSingleton<Helpers>()
             .AddHostedService<Startup>();

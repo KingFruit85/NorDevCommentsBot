@@ -42,7 +42,7 @@ public class GetThisMonthsComments : InteractionModuleBase<SocketInteractionCont
 
         try
         {
-            var response = await _apiService.GetThisMonthsComments();
+            var response = await _apiService.GetThisMonthsComments(Context.Guild.Id);
 
             if (response is not null)
                 foreach (var (comment, index) in response.Select((comment, index) => (comment, index)))

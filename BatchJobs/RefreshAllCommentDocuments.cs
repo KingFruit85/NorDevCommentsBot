@@ -11,10 +11,10 @@ public class RefreshAllCommentDocuments(
     Helpers helpers,
     ILogger<RefreshAllCommentDocuments> logger)
 {
-    public async Task Refresh(DiscordSocketClient client)
+    public async Task Refresh(DiscordSocketClient client, ulong guildId)
     {
         logger.LogInformation("Fetching all comments.");
-        var allComments = apiService.GetAllComments().Result;
+        var allComments = apiService.GetAllComments(guildId).Result;
         if (allComments is null)
         {
             logger.LogError("No comments found.");
@@ -83,13 +83,13 @@ public class RefreshAllCommentDocuments(
         }
     }
 
-    public void RefreshInBackground(DiscordSocketClient client)
+    public void RefreshInBackground(DiscordSocketClient client, ulong guildId)
     {
         Task.Run(async () =>
         {
             try
             {
-                await Refresh(client);
+                await Refresh(client, guildId);
             }
             catch (Exception e)
             {

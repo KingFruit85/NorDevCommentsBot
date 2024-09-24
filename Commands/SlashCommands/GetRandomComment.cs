@@ -26,7 +26,7 @@ public class GetRandomComment : InteractionModuleBase<SocketInteractionContext<S
 
         try
         {
-            var response = await _apiService.GetRandomComment();
+            var response = await _apiService.GetRandomComment(Context.Guild.Id);
 
             if (response is not null)
             {

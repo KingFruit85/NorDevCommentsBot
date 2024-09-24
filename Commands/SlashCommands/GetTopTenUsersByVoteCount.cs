@@ -19,9 +19,9 @@ public class GetTopTenUsersByVoteCount : InteractionModuleBase<SocketInteraction
     {
         await DeferAsync(isEphemeral);
 
-        var response = await _apiService.GetTopTenUsersByVoteCount();
+        var response = await _apiService.GetTopTenUsersByVoteCount(Context.Guild.Id);
 
-        if (response is null || response!.Count < 1)
+        if (response is null || response.Count < 1)
             await FollowupAsync("No user voting history was found for this server");
 
         var embed = new EmbedBuilder()

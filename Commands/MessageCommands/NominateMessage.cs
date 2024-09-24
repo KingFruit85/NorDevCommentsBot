@@ -1,7 +1,3 @@
-using System.Diagnostics;
-using Amazon;
-using Amazon.S3;
-using Amazon.S3.Model;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -49,9 +45,10 @@ public class NominateMessage(
         }
 
         var nominatedMessageLink = msg.GetJumpUrl().Trim();
+        var guildId = Context.Guild!.Id;
 
         var messageAlreadyPersisted =
-            await apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink);
+            await apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink, guildId);
 
         if (messageAlreadyPersisted is not null)
         {
@@ -72,12 +69,14 @@ public class NominateMessage(
                 row: 0)
             .WithButton(
                 "❔",
-                "info_button")
+                "info_button",
+                row: 0
+            )
             .WithButton(
                 "🌐",
                 style: ButtonStyle.Link,
                 url: "https://ephemeral-dieffenbachia-1b47c2.netlify.app/",
-                row: 0);
+                row: 1);
 
         // Create a list of embeds that we will include with the response
         List<Embed> embeds = [];
@@ -118,7 +117,7 @@ public class NominateMessage(
                 var refAttach = refrencedMessage.Attachments.FirstOrDefault();
                 var e = referencedMessageEmbed;
 
-                if (refAttach!.Width > 0 && refAttach!.Height > 0)
+                if (refAttach!.Width > 0 && refAttach.Height > 0)
                 {
                     Console.WriteLine(@$"Attempting to upload image embed {e.Url} to s3");
                     amazonS3Service.UploadImageToS3FromUrlInBackground(refAttach.Url);
@@ -176,7 +175,7 @@ public class NominateMessage(
         if (msg.Embeds.Count == 1 || msg.Attachments.Count == 1)
         {
             var embed = msg.Embeds.FirstOrDefault();
-            if (embed is not null && embed!.Image.HasValue)
+            if (embed is not null && embed.Image.HasValue)
             {
                 Console.WriteLine(@"found 1 embed");
                 Console.WriteLine(@$"Attempting to upload image embed {embed.Url} to s3");

@@ -1,24 +1,15 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Microsoft.Extensions.Logging;
 using NorDevBestOfBot.Builders;
 using NorDevBestOfBot.Extensions;
 using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class GetUsersTopFiveComments : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
+public class GetUsersTopFiveComments(ApiService apiService)
+    : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
-    private readonly ApiService _apiService;
-    private readonly ILogger<GetUsersTopFiveComments> _logger;
-
-    public GetUsersTopFiveComments(ApiService apiService, ILogger<GetUsersTopFiveComments> logger)
-    {
-        _apiService = apiService;
-        _logger = logger;
-    }
-
     [SlashCommand("get-users-top-five-comments", "Gets the top five comments for a user.")]
     public async Task Handle(
         [Summary(description: "The user to get the top five comments for.")]
@@ -32,7 +23,7 @@ public class GetUsersTopFiveComments : InteractionModuleBase<SocketInteractionCo
 
         try
         {
-            var response = await _apiService.GetUsersTopFiveComments(user);
+            var response = await apiService.GetUsersTopFiveComments(user, Context.Guild.Id);
 
             if (response?.Count < 1 || response is null)
                 await FollowupAsync($"The user {user} was not found or does not have any nominated comments");

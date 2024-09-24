@@ -11,9 +11,7 @@ namespace NorDevBestOfBot;
 public class Startup(
     DiscordSocketClient discord,
     IOptions<BotOptions> botOptions,
-    ILogger<DiscordSocketClient> logger,
-    BackgroundScheduler backgroundScheduler,
-    PostTopMonthCommentsScheduledTask postTopMonthCommentsScheduledTask)
+    ILogger<DiscordSocketClient> logger)
     : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -21,10 +19,6 @@ public class Startup(
         logger.LogDebug("Logging in...");
         await discord.LoginAsync(TokenType.Bot, botOptions.Value.Token);
         await discord.StartAsync();
-
-        logger.LogDebug("Starting background scheduler...");
-        backgroundScheduler.ScheduleJob("month-top-comments", "0 12 28 * *",
-            async () => await postTopMonthCommentsScheduledTask.ExecuteAsync());
 
         await Task.Delay(-1, cancellationToken);
     }
