@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NorDevBestOfBot;
-using NorDevBestOfBot.BatchJobs;
 using NorDevBestOfBot.Extensions;
 using NorDevBestOfBot.Models.Options;
 using NorDevBestOfBot.Services;
@@ -25,7 +24,7 @@ using var host = Host.CreateDefaultBuilder(args)
         {
             MessageCacheSize = 100,
             GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent | GatewayIntents.Guilds |
-                             GatewayIntents.GuildMessages
+                             GatewayIntents.GuildMessages | GatewayIntents.GuildMessageReactions
         };
 
         var interactionServiceConfig = new InteractionServiceConfig
@@ -55,7 +54,6 @@ using var host = Host.CreateDefaultBuilder(args)
             .AddSingleton<CloudinaryService>()
             .AddHostedService<InteractionHandlingService>()
             .AddSingleton<BackgroundScheduler>()
-            .AddSingleton<RefreshAllCommentDocuments>()
             .AddSingleton<Helpers>()
             .AddHostedService<Startup>();
     })

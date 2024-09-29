@@ -1,12 +1,301 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
+using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot;
 
-public class Helpers(ILogger<Helpers> logger)
+public class Helpers(ILogger<Helpers> logger, ApiService apiService, AmazonS3Service amazonS3Service)
 {
-    
+    public async Task<string> GetCompressedMessageImageUrls(IMessage message)
+    {
+        var s3ImageUrls = string.Empty;
+
+        if (message.Attachments.Count <= 0) return s3ImageUrls;
+        foreach (var attachment in message.Attachments)
+        {
+            if (!(attachment.Width > 0) || !(attachment.Height > 0)) continue;
+            var url = await amazonS3Service.UploadImageViaUrlAsync(attachment.Url);
+            s3ImageUrls += url;
+            s3ImageUrls += ",";
+        }
+
+        // remove the last comma
+        if (s3ImageUrls.Length > 0) s3ImageUrls = s3ImageUrls.Remove(s3ImageUrls.Length - 1);
+
+        return s3ImageUrls;
+    }
+
+    public async Task NominateMessage(IMessage nominatedMessage, IUser nominator)
+    {
+        const ulong chrisUserId = 317070992339894273;
+        var channel = nominatedMessage.Channel as ITextChannel;
+        var guild = channel!.Guild;
+
+        Console.WriteLine(@"Entered NominateMessage Method");
+
+        if (nominator.Id == nominatedMessage.Author.Id && nominator.Id != chrisUserId)
+        {
+            await channel.SendMessageAsync(UserNominatingOwnComment(nominator));
+            return;
+        }
+
+        var nominatedMessageLink = nominatedMessage.GetJumpUrl().Trim();
+        var messageAlreadyPersisted =
+            await apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink, guild.Id);
+        
+        // Check if the message has already been nominated
+        if (messageAlreadyPersisted is not null)
+        {
+            var voters = messageAlreadyPersisted?.voters;
+            Console.WriteLine($@"votes: {voters}");
+            if (voters != null && !voters.Contains(nominator.Username))
+            {
+                await apiService.AddVoteToMessage(nominatedMessage.GetJumpUrl(), nominator.Username, true, guild.Id);
+                var voteCount = messageAlreadyPersisted?.voteCount + 1;
+                await nominator.SendMessageAsync(@$"This message has already been nominated, but I've added your vote to it, it now has {voteCount} votes, Cheers!");
+                return;
+            }
+        }
+        
+
+        var referencedMessageLink = string.Empty;
+        IUserMessage? referencedMessage = null;
+
+        if (nominatedMessage.Reference is not null)
+        {
+            Console.WriteLine(@"Nominated message has a reference message");
+            var refMessage = await channel.GetMessageAsync(nominatedMessage.Reference.MessageId.Value) as IUserMessage;
+            if (refMessage is not null)
+            {
+                referencedMessageLink = refMessage.GetJumpUrl().Trim();
+                referencedMessage = refMessage;
+            }
+            else
+            {
+                Console.WriteLine(@"Referenced message not found");
+            }
+        }
+
+        var voteButtons = new ComponentBuilder()
+            // .WithButton(
+            //     "👍🏻",
+            //     $"vote:true,{nominatedMessageLink}",
+            //     ButtonStyle.Success,
+            //     row: 0)
+            // .WithButton(
+            //     "💩",
+            //     $"vote:false,{nominatedMessageLink}",
+            //     ButtonStyle.Danger,
+            //     row: 0)
+            .WithButton(
+                "❔",
+                "info_button",
+                row: 0
+            )
+            .WithButton(
+                "📤",
+                style: ButtonStyle.Link,
+                url: nominatedMessageLink,
+                row: 0)
+            .WithButton(
+                "🌐",
+                style: ButtonStyle.Link,
+                url: "https://ephemeral-dieffenbachia-1b47c2.netlify.app/?guildId=" + guild.Id,
+                row: 0);
+
+        // Create a list of embeds that we will include with the response
+        List<Embed> embeds = [];
+
+        if (referencedMessage is not null)
+        {
+            Console.WriteLine(@"Creating embed for referenced message");
+            var referencedMessageEmbed = new EmbedBuilder()
+                .WithAuthor(referencedMessage.Author)
+                .WithDescription(referencedMessage.Content)
+                .WithUrl(referencedMessageLink);
+
+            if (referencedMessage.Attachments.Count == 0)
+            {
+                embeds.Add(referencedMessageEmbed.Build());
+            }
+
+            if (referencedMessage.Attachments.Count == 1)
+            {
+                var refAttach = referencedMessage.Attachments.FirstOrDefault();
+                if (refAttach is { Width: > 0, Height: > 0 })
+                {
+                    Console.WriteLine(@$"Attempting to upload image embed {referencedMessageEmbed.Url} to s3");
+                    amazonS3Service.UploadImageToS3FromUrlInBackground(refAttach.Url);
+
+                    referencedMessageEmbed.WithImageUrl(refAttach.Url);
+                    embeds.Add(referencedMessageEmbed.Build());
+                }
+            }
+
+            if (referencedMessage.Attachments.Count > 1)
+            {
+                foreach (var attachment in referencedMessage.Attachments)
+                {
+                    if (!(attachment.Width > 0) || !(attachment.Height > 0)) continue;
+                    amazonS3Service.UploadImageToS3FromUrlInBackground(attachment.Url);
+                    var attach
+                        = new EmbedBuilder()
+                            .WithUrl(referencedMessage.GetJumpUrl().Trim())
+                            .WithImageUrl(attachment.Url)
+                            .Build();
+
+                    embeds.Add(attach);
+                }
+            }
+        }
+
+        var nominatedMessageEmbed = new EmbedBuilder()
+            .WithAuthor(nominatedMessage.Author)
+            .WithDescription(nominatedMessage.Content)
+            .WithUrl(nominatedMessageLink);
+
+        if (nominatedMessage.Attachments.Count == 0)
+        {
+            embeds.Add(nominatedMessageEmbed.Build());
+        }
+
+        if (nominatedMessage.Attachments.Count == 1)
+        {
+            var messageAttachment = nominatedMessage.Attachments.FirstOrDefault();
+            if (messageAttachment is { Width: > 0, Height: > 0 })
+            {
+                amazonS3Service.UploadImageToS3FromUrlInBackground(messageAttachment.Url);
+                nominatedMessageEmbed.WithImageUrl(messageAttachment.Url);
+                embeds.Add(nominatedMessageEmbed.Build());
+            }
+        }
+
+        if (nominatedMessage.Attachments.Count > 1)
+        {
+            foreach (var attachment in nominatedMessage.Attachments)
+            {
+                if (!(attachment.Width > 0) || !(attachment.Height > 0)) continue;
+                amazonS3Service.UploadImageToS3FromUrlInBackground(attachment.Url);
+                var e = nominatedMessageEmbed;
+                e.WithImageUrl(attachment.Url);
+                embeds.Add(e.Build());
+            }
+        }
+
+        Console.WriteLine("Sending message to channel");
+        await channel.SendMessageAsync(
+            text:
+            $"**The {Helpers.GetUserNameAdjective()} {nominator.Mention}** has nominated **{nominatedMessage.Author.Mention}'s** message to be added to the best of list",
+            components: voteButtons.Build(), embeds: embeds.ToArray());
+    }
+
+    public static List<Embed> GetMessageAttachments(IMessage message, AmazonS3Service amazonS3Service,
+        IUserMessage? referencedMessage = null)
+    {
+        Console.WriteLine(referencedMessage is not null);
+        List<Embed> messageAttachments = [];
+
+        if (referencedMessage is not null)
+        {
+            Console.WriteLine(@"Creating embed for referenced message)");
+            Console.WriteLine(
+                $@"The referenced message has {referencedMessage.Attachments.Count} attachments");
+
+            var referencedMessageEmbed = new EmbedBuilder()
+                .WithAuthor(referencedMessage.Author)
+                .WithDescription(referencedMessage.Content)
+                .WithUrl(referencedMessage.GetJumpUrl().Trim());
+
+            switch (referencedMessage.Attachments.Count)
+            {
+                case 0:
+                    messageAttachments.Add(referencedMessageEmbed.Build());
+                    break;
+                case 1:
+                {
+                    var refAttach = referencedMessage.Attachments.FirstOrDefault();
+
+                    if (refAttach is { Width: > 0, Height: > 0 })
+                    {
+                        Console.WriteLine(@$"Attempting to upload image embed {referencedMessageEmbed.Url} to s3");
+                        amazonS3Service.UploadImageToS3FromUrlInBackground(refAttach.Url);
+
+                        referencedMessageEmbed.WithImageUrl(refAttach.Url);
+                        messageAttachments.Add(referencedMessageEmbed.Build());
+                    }
+
+                    break;
+                }
+                case > 1:
+                {
+                    foreach (var a in referencedMessage.Attachments)
+                        if (a.Width > 0 && a.Height > 0)
+                        {
+                            Console.WriteLine(@$"Attempting to upload image embed {a.Url} to s3");
+                            amazonS3Service.UploadImageToS3FromUrlInBackground(a.Url);
+                            var at = new EmbedBuilder()
+                                .WithUrl(referencedMessage.GetJumpUrl().Trim())
+                                .WithImageUrl(a.Url)
+                                .Build();
+
+                            messageAttachments.Add(at);
+                        }
+
+                    break;
+                }
+            }
+        }
+
+        Console.WriteLine(@"Creating embeds the nominated message)");
+        Console.WriteLine(
+            $@"The nominated message has {message.Attachments.Count} attachments and {message.Embeds.Count} embeds");
+
+        var nominatedMessageEmbed = new EmbedBuilder()
+            .WithAuthor(message.Author)
+            .WithDescription(message.Content)
+            .WithUrl(message.GetJumpUrl().Trim());
+
+        switch (message.Attachments.Count)
+        {
+            case 0:
+                messageAttachments.Add(nominatedMessageEmbed.Build());
+                break;
+            case 1:
+            {
+                var messageAttachment = message.Attachments.FirstOrDefault();
+
+                if (messageAttachment is { Width: > 0, Height: > 0 })
+                {
+                    Console.WriteLine(@$"Attempting to upload image attachment {messageAttachment.Url} to s3");
+                    amazonS3Service.UploadImageToS3FromUrlInBackground(messageAttachment.Url);
+
+                    nominatedMessageEmbed.WithImageUrl(messageAttachment.Url);
+                    messageAttachments.Add(nominatedMessageEmbed.Build());
+                }
+
+                break;
+            }
+            case > 1:
+            {
+                Console.WriteLine($@"found {message.Attachments.Count} attachments and {message.Embeds.Count} embeds");
+                foreach (var attachment in message.Attachments)
+                    if (attachment.Width > 0 && attachment.Height > 0)
+                    {
+                        Console.WriteLine(@$"Attempting to upload image attachment {attachment.Url} to s3");
+                        amazonS3Service.UploadImageToS3FromUrlInBackground(attachment.Url);
+                        var e = nominatedMessageEmbed;
+                        e.WithImageUrl(attachment.Url);
+                        messageAttachments.Add(e.Build());
+                    }
+
+                break;
+            }
+        }
+
+        return messageAttachments;
+    }
+
     public ulong GetGuildIdFromMessageLink(string messageLink)
     {
         var parts = messageLink.Split('/');
@@ -20,7 +309,7 @@ public class Helpers(ILogger<Helpers> logger)
         logger.LogError("Failed to parse guild ID from message link: {MessageLink}", messageLink);
         return 0;
     }
-    
+
     public async Task<IMessage?> GetCommentFromMessageLinkAsync(DiscordSocketClient client, string messageLink)
     {
         var (_, _, message) = await GetObjectsFromMessageLinkPartsAsync(client, messageLink);
@@ -272,7 +561,7 @@ public class Helpers(ILogger<Helpers> logger)
         return embed.Type == EmbedType.Image && Uri.IsWellFormedUriString(embed.Url, UriKind.Absolute);
     }
 
-    public static string UserNominatingOwnComment(SocketGuildUser user)
+    public string UserNominatingOwnComment(IUser user)
     {
         List<string> replies = new()
         {

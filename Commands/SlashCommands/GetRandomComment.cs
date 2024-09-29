@@ -8,17 +8,9 @@ using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class GetRandomComment : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
+public class GetRandomComment(ApiService apiService, ILogger<GetRandomComment> logger)
+    : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
-    private readonly ApiService _apiService;
-    private readonly ILogger<GetRandomComment> _logger;
-
-    public GetRandomComment(ApiService apiService, ILogger<GetRandomComment> logger)
-    {
-        _apiService = apiService;
-        _logger = logger;
-    }
-
     [SlashCommand("get-random-comment", "Gets a random comment from the database.")]
     public async Task Handle([Summary(description: "Hide this post?")] bool isEphemeral = true)
     {
@@ -26,7 +18,7 @@ public class GetRandomComment : InteractionModuleBase<SocketInteractionContext<S
 
         try
         {
-            var response = await _apiService.GetRandomComment(Context.Guild.Id);
+            var response = await apiService.GetRandomComment(Context.Guild.Id);
 
             if (response is not null)
             {
@@ -50,7 +42,7 @@ public class GetRandomComment : InteractionModuleBase<SocketInteractionContext<S
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, ex.Message);
+            logger.LogError(ex, ex.Message);
             await FollowupAsync("An error occurred while trying to get a random comment.");
         }
     }

@@ -18,6 +18,79 @@ public class ApiService
         _httpClient.BaseAddress = new Uri(apiOptions.Value.BaseUrl);
         _logger = logger;
     }
+    
+    public async Task<List<string>?> GetBlacklistedChannels(ulong guildId)
+    {
+        return await GetFromJsonAsync<List<string>>($"guildconfig/getblacklistedchannels?guildId=" + guildId);
+    }
+    
+    public async Task<bool> SetBlacklistedChannels(ulong guildId, string[] channelIds)
+    {
+        var url = $"guildconfig/setblacklistedchannels?guildId={guildId}";
+        var response = await _httpClient.PostAsJsonAsync(url, channelIds);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
+            _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,response.Content.Headers );
+        }
+        
+        return response.IsSuccessStatusCode;
+    }
+    
+    public async Task<BotGuildConfig> GetGuildConfigAsync(ulong guildId)
+    {
+        var url = $"messages/guildconfig?guildId={guildId}";
+
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<BotGuildConfig?>(url);
+            if (response is null)
+            {
+                _logger.LogError("Something went wrong retrieving the guild config for guild: {guildId}", guildId);
+                throw new Exception("No guild config found");
+            }
+            return response;
+            
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Error getting guild config for guild {guildId}: {Message}", guildId, e.Message);
+            throw;
+        }
+    }
+    
+    public async Task<bool> UpsertGuildConfigAsync(BotGuildConfig config)
+    {
+        // Retrieve the API key from environment variables
+        var apiKey = Environment.GetEnvironmentVariable("API_KEY");
+
+        if (string.IsNullOrEmpty(apiKey) || string.IsNullOrWhiteSpace(apiKey))
+        {
+            _logger.LogError("API key is not set in environment variables");
+            return false;
+        }
+
+        // Create a new HttpRequestMessage
+        var request = new HttpRequestMessage(HttpMethod.Post, "messages/upsertGuildConfig");
+
+        // Add the API key to the request headers
+        request.Headers.Add("X-API-Key", apiKey);
+
+        // Set the content of the request
+        request.Content = JsonContent.Create(config);
+        // Send the request
+        var response = await _httpClient.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
+            _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,response.Content.Headers );
+        }
+
+        return response.IsSuccessStatusCode;
+        
+    }
 
     public async Task<bool> UpsertMessageAsync(Comment comment)
     {
@@ -90,7 +163,7 @@ public class ApiService
     {
         _logger.LogInformation("Checking if message has already been persisted");
         var response = await GetFromJsonAsync<Comment?>($"messages/GetMessageByMessageLink?id={messageLink}&guildId={guildId}");
-        if (response is null) _logger.LogError("message not found");
+        if (response is null) _logger.LogInformation("message not found in database");
 
         return response ?? null;
     }
@@ -150,5 +223,15 @@ public class ApiService
             _logger.LogError("Failed to get data from endpoint: {endpoint}", endpoint);
             return default;
         }
+    }
+
+    public async Task<bool> SetCrosspostChannel(ulong guildId, string channelId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<bool> SetAllowCrosspost(ulong guildId, bool allowCrosspost)
+    {
+        throw new NotImplementedException();
     }
 }

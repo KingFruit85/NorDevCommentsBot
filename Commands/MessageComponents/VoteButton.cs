@@ -97,6 +97,7 @@ public class VoteButton(
             quotedMessageAuthor = "",
             quotedMessageAvatarLink = "",
             quotedMessageImage = "",
+            s3QuotedMessageImageUrl = "",
             nickname = message.Author.Username,
             quotedMessageAuthorNickname = "",
             quotedMessageMessageLink = ""
@@ -175,7 +176,7 @@ public class VoteButton(
         {
             var data = JsonSerializer.Serialize(comment);
             var content = new StringContent(data, Encoding.UTF8, "application/json");
-            WriteLine($"the guildid from guild context is {Context.Guild.Id}");
+            WriteLine($@"the guildId from guild context is {Context.Guild.Id}");
             WriteLine($@"creating new record with following content {data}");
             var isCommentSavedSuccessfully = await apiService.SaveComment(content, Context.Guild.Id);
 
