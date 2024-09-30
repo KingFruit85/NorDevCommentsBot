@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using Discord;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,78 +19,42 @@ public class ApiService
         _httpClient.BaseAddress = new Uri(apiOptions.Value.BaseUrl);
         _logger = logger;
     }
-    
-    public async Task<List<string>?> GetBlacklistedChannels(ulong guildId)
-    {
-        return await GetFromJsonAsync<List<string>>($"guildconfig/getblacklistedchannels?guildId=" + guildId);
-    }
-    
-    public async Task<bool> SetBlacklistedChannels(ulong guildId, string[] channelIds)
-    {
-        var url = $"guildconfig/setblacklistedchannels?guildId={guildId}";
-        var response = await _httpClient.PostAsJsonAsync(url, channelIds);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
-            _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,response.Content.Headers );
-        }
-        
-        return response.IsSuccessStatusCode;
+    public async Task<bool> SetBlacklistedChannels(List<ulong> channelIds, ulong guildId)
+    {
+        var url = "messages/setBlacklistedChannels?guildId=" + guildId;
+
+        var response = await _httpClient.PostAsJsonAsync(url, channelIds);
+        _logger.LogInformation("Response: {response}", response);
+
+        if (response.IsSuccessStatusCode) return true;
+        _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
+        _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,
+            response.Content.Headers);
+        return false;
     }
-    
+
     public async Task<BotGuildConfig> GetGuildConfigAsync(ulong guildId)
     {
         var url = $"messages/guildconfig?guildId={guildId}";
-
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<BotGuildConfig?>(url);
-            if (response is null)
-            {
-                _logger.LogError("Something went wrong retrieving the guild config for guild: {guildId}", guildId);
-                throw new Exception("No guild config found");
-            }
-            return response;
-            
+            var response = await _httpClient.GetFromJsonAsync<BotGuildConfig>(url);
+            if (response is not null) return response;
+            throw new HttpRequestException($"No guild config found for guild {guildId}", null,
+                System.Net.HttpStatusCode.NotFound);
         }
-        catch (Exception e)
+        catch (HttpRequestException e)
         {
-            _logger.LogError("Error getting guild config for guild {guildId}: {Message}", guildId, e.Message);
+            _logger.LogError(e, "Error getting guild config for guild {GuildId}. Status code: {StatusCode}", guildId,
+                e.StatusCode);
             throw;
         }
-    }
-    
-    public async Task<bool> UpsertGuildConfigAsync(BotGuildConfig config)
-    {
-        // Retrieve the API key from environment variables
-        var apiKey = Environment.GetEnvironmentVariable("API_KEY");
-
-        if (string.IsNullOrEmpty(apiKey) || string.IsNullOrWhiteSpace(apiKey))
+        catch (JsonException e)
         {
-            _logger.LogError("API key is not set in environment variables");
-            return false;
+            _logger.LogError(e, "Error deserializing guild config for guild {GuildId}", guildId);
+            throw;
         }
-
-        // Create a new HttpRequestMessage
-        var request = new HttpRequestMessage(HttpMethod.Post, "messages/upsertGuildConfig");
-
-        // Add the API key to the request headers
-        request.Headers.Add("X-API-Key", apiKey);
-
-        // Set the content of the request
-        request.Content = JsonContent.Create(config);
-        // Send the request
-        var response = await _httpClient.SendAsync(request);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
-            _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,response.Content.Headers );
-        }
-
-        return response.IsSuccessStatusCode;
-        
     }
 
     public async Task<bool> UpsertMessageAsync(Comment comment)
@@ -118,7 +83,8 @@ public class ApiService
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
-            _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,response.Content.Headers );
+            _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,
+                response.Content.Headers);
         }
 
         return response.IsSuccessStatusCode;
@@ -146,12 +112,14 @@ public class ApiService
 
     public async Task<Dictionary<string, int>?> GetTopTenUsersByPostCount(ulong guildId)
     {
-        return await GetFromJsonAsync<Dictionary<string, int>?>("messages/gettoptenusersbypostcount?guildId=" + guildId);
+        return await GetFromJsonAsync<Dictionary<string, int>?>("messages/gettoptenusersbypostcount?guildId=" +
+                                                                guildId);
     }
 
     public async Task<Dictionary<string, int>?> GetTopTenUsersByVoteCount(ulong guildId)
     {
-        return await GetFromJsonAsync<Dictionary<string, int>?>("messages/gettoptenusersbyvotecount?guildId=" + guildId);
+        return await GetFromJsonAsync<Dictionary<string, int>?>("messages/gettoptenusersbyvotecount?guildId=" +
+                                                                guildId);
     }
 
     public async Task<List<Comment>?> GetUsersTopFiveComments(IUser user, ulong guildId)
@@ -162,7 +130,8 @@ public class ApiService
     public async Task<Comment?> CheckIfMessageAlreadyPersistedAsync(string messageLink, ulong guildId)
     {
         _logger.LogInformation("Checking if message has already been persisted");
-        var response = await GetFromJsonAsync<Comment?>($"messages/GetMessageByMessageLink?id={messageLink}&guildId={guildId}");
+        var response =
+            await GetFromJsonAsync<Comment?>($"messages/GetMessageByMessageLink?id={messageLink}&guildId={guildId}");
         if (response is null) _logger.LogInformation("message not found in database");
 
         return response ?? null;
@@ -184,7 +153,8 @@ public class ApiService
         }
         catch (Exception ex)
         {
-            _logger.LogError("Failed to add vote to message: {messageLink}, exception message : {ex}", messageLink, ex.Message);
+            _logger.LogError("Failed to add vote to message: {messageLink}, exception message : {ex}", messageLink,
+                ex.Message);
 
             return false;
         }
@@ -225,13 +195,32 @@ public class ApiService
         }
     }
 
-    public async Task<bool> SetCrosspostChannel(ulong guildId, string channelId)
+    public async Task<bool> SetCrosspostChannels(List<ulong> channelIds, ulong guildId)
     {
-        throw new NotImplementedException();
+        var url = $"messages/setCrosspostChannels?guildId={guildId}";
+
+        var response = await _httpClient.PostAsJsonAsync(url, channelIds);
+
+        if (response.IsSuccessStatusCode) return true;
+        _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
+        _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,
+            response.Content.Headers);
+
+        return false;
     }
 
     public async Task<bool> SetAllowCrosspost(ulong guildId, bool allowCrosspost)
     {
-        throw new NotImplementedException();
+        var url = $"messages/setAllowCrossposts?allow={allowCrosspost}&guildId={guildId}";
+
+        var response = await _httpClient.PostAsJsonAsync(url, allowCrosspost);
+        _logger.LogInformation("SetAllowCrosspost response: {response}", response);
+
+        if (response.IsSuccessStatusCode) return true;
+        _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
+        _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,
+            response.Content.Headers);
+
+        return false;
     }
 }

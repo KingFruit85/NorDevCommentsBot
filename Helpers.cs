@@ -1,11 +1,17 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using NorDevBestOfBot.Models.Options;
 using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot;
 
-public class Helpers(ILogger<Helpers> logger, ApiService apiService, AmazonS3Service amazonS3Service)
+public class Helpers(
+    ILogger<Helpers> logger,
+    ApiService apiService,
+    AmazonS3Service amazonS3Service,
+    IOptions<ServerOptions> serverOptions)
 {
     public async Task<string> GetCompressedMessageImageUrls(IMessage message)
     {
@@ -43,7 +49,7 @@ public class Helpers(ILogger<Helpers> logger, ApiService apiService, AmazonS3Ser
         var nominatedMessageLink = nominatedMessage.GetJumpUrl().Trim();
         var messageAlreadyPersisted =
             await apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink, guild.Id);
-        
+
         // Check if the message has already been nominated
         if (messageAlreadyPersisted is not null)
         {
@@ -53,11 +59,12 @@ public class Helpers(ILogger<Helpers> logger, ApiService apiService, AmazonS3Ser
             {
                 await apiService.AddVoteToMessage(nominatedMessage.GetJumpUrl(), nominator.Username, true, guild.Id);
                 var voteCount = messageAlreadyPersisted?.voteCount + 1;
-                await nominator.SendMessageAsync(@$"This message has already been nominated, but I've added your vote to it, it now has {voteCount} votes, Cheers!");
+                await nominator.SendMessageAsync(
+                    @$"This message has already been nominated, but I've added your vote to it, it now has {voteCount} votes, Cheers!");
                 return;
             }
         }
-        
+
 
         var referencedMessageLink = string.Empty;
         IUserMessage? referencedMessage = null;
@@ -188,6 +195,47 @@ public class Helpers(ILogger<Helpers> logger, ApiService apiService, AmazonS3Ser
             text:
             $"**The {Helpers.GetUserNameAdjective()} {nominator.Mention}** has nominated **{nominatedMessage.Author.Mention}'s** message to be added to the best of list",
             components: voteButtons.Build(), embeds: embeds.ToArray());
+
+        // Post to the general channel if the nominated message didn't originate in the general channel
+
+        var guildConfig = await apiService.GetGuildConfigAsync(guild.Id);
+
+        if (guildConfig.CrosspostChannels is not null && guildConfig.AllowCrosspost &&
+            guildConfig.CrosspostChannels.Count > 0)
+        {
+            List<ITextChannel> crossPostChannels = [];
+
+            foreach (var chan in guildConfig.CrosspostChannels)
+            {
+                var crossPostChannel = await guild.GetChannelAsync(chan) as ITextChannel;
+                if (crossPostChannel is not null)
+                {
+                    crossPostChannels.Add(crossPostChannel);
+                }
+            }
+
+            if (crossPostChannels.Count > 0)
+            {
+                var messageLinkButton = new ComponentBuilder()
+                    .WithButton(
+                        "Take me to the post 📫",
+                        style: ButtonStyle.Link,
+                        url: nominatedMessageLink,
+                        row: 0);
+
+                Console.WriteLine(@"Posting message to Crosspost channels");
+
+                foreach (var chan in crossPostChannels)
+                {
+                    await chan.SendMessageAsync(
+                        Helpers.GeneralChannelGreeting(channel, (SocketUser)nominator,
+                            nominatedMessage),
+                        allowedMentions: AllowedMentions.All,
+                        components: messageLinkButton.Build(),
+                        embeds: embeds.ToArray());
+                }
+            }
+        }
     }
 
     public static List<Embed> GetMessageAttachments(IMessage message, AmazonS3Service amazonS3Service,

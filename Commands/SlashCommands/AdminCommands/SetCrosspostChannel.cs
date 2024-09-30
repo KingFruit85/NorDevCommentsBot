@@ -7,19 +7,21 @@ namespace NorDevBestOfBot.Commands.SlashCommands.AdminCommands;
 
 public class SetCrosspostChannel(ApiService apiService) : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
-    [RequireUserPermission(GuildPermission.Administrator)]
-    [SlashCommand("set-crosspost-channel", "Set the channel the bot will crosspost to.")]
-    public async Task Handle([Summary(description: "Channel id to crosspost to")] string channelId)
+    // [RequireUserPermission(GuildPermission.Administrator)]
+    [SlashCommand("set-crosspost-channel", "Set the channel(s) the bot will crosspost to. (separate multiple channels with a comma)")]
+    public async Task Handle([Summary(description: "Channel id to crosspost to")] string channelIds, bool isEphemeral = true)
     {
-        await DeferAsync();
+        await DeferAsync(isEphemeral);
         
-        if (string.IsNullOrEmpty(channelId))
+        if (string.IsNullOrEmpty(channelIds))
         {
             await FollowupAsync("No channelId provided.");
             return;
         }
+        
+        var channelIdsAsUlongList = channelIds.Split(',').Select(ulong.Parse).ToList();
 
-        var isCrosspostChannelSet = await apiService.SetCrosspostChannel(Context.Guild.Id, channelId);
+        var isCrosspostChannelSet = await apiService.SetCrosspostChannels(channelIdsAsUlongList, Context.Guild.Id);
 
         if (isCrosspostChannelSet)
         {

@@ -3,17 +3,16 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using NorDevBestOfBot.Builders;
 using NorDevBestOfBot.Models;
-using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class NominateMultipleMessages(ApiService apiService)
+public class NominateMultipleMessages()
     : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("nominate-multiple-messages", "Nominate a selection of messages.")]
-    public async Task Handle([Summary(description: "Start message Id")] ulong startMessageId, [Summary(description: "Number of messages to include")] int numberOfMessages)
+    public async Task Handle([Summary(description: "Start message Id")] ulong startMessageId, [Summary(description: "Number of messages to include")] int numberOfMessages, bool isEphemeral = true)
     {
-        await DeferAsync();
+        await DeferAsync(isEphemeral);
         const Direction direction = Direction.After;
         const CacheMode cacheMode = CacheMode.AllowDownload;
         // get channel slash command was used in

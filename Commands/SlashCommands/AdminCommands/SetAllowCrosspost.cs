@@ -8,15 +8,15 @@ namespace NorDevBestOfBot.Commands.SlashCommands.AdminCommands;
 public class SetAllowCrosspost(ApiService apiService)
     : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
-    [RequireUserPermission(GuildPermission.Administrator)]
+    // [RequireUserPermission(GuildPermission.Administrator)]
     [SlashCommand("set-allow-crosspost", "Set whether the bot is allowed to crosspost.")]
-    public async Task Handle([Summary(description:"Allow crosspost?")] bool allowCrosspost)
+    public async Task Handle([Summary(description:"Allow crosspost?")] bool allowCrosspost, bool isEphemeral = true)
     {
-        await DeferAsync();
+        await DeferAsync(isEphemeral);
         
-        var isAllowCrosspostSet = await apiService.SetAllowCrosspost(Context.Guild.Id, allowCrosspost);
+        var allowCrosspostSet = await apiService.SetAllowCrosspost(Context.Guild.Id, allowCrosspost);
 
-        if (isAllowCrosspostSet)
+        if (allowCrosspostSet)
         {
             await FollowupAsync("Allow crosspost set successfully.");
         }

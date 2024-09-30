@@ -100,6 +100,7 @@ public class InteractionHandlingService : IHostedService
 
     private async Task SlashCommandExecuted(SocketSlashCommand interaction)
     {
+        _logger.LogInformation("Received slash command {command}", interaction.Data.Name);
         var context = new SocketInteractionContext<SocketSlashCommand>(_discord, interaction);
         try
         {
@@ -110,7 +111,11 @@ public class InteractionHandlingService : IHostedService
         catch (Exception ex)
         {
             if (!context.Interaction.HasResponded)
+            {
                 await context.Interaction.RespondAsync($"An error occurred: {ex.Message}", ephemeral: true);
+            }
+            _logger.LogInformation("Some error");
+
         }
     }
 
@@ -149,9 +154,9 @@ public class InteractionHandlingService : IHostedService
     private async Task HandleReactionAdded(Cacheable<IUserMessage, ulong> cachedMessage,
         Cacheable<IMessageChannel, ulong> originChannel, SocketReaction reaction)
     {
-        
         // Ignore bot reactions
         if (reaction.User.Value.IsBot) return;
+        if (reaction.Message.Value.Author.IsBot) return;
 
         var message = await cachedMessage.GetOrDownloadAsync();
         var channel = await originChannel.GetOrDownloadAsync();
@@ -165,14 +170,16 @@ public class InteractionHandlingService : IHostedService
             try
             {
                 var isPersisted = await _apiService.CheckIfMessageAlreadyPersistedAsync(message.GetJumpUrl(),guildId);
-                if (isPersisted is not null)
-                {
-                    Console.WriteLine(@$"message is persisted, just adding vote to message");
-                    // add vote to message
-                    await _apiService.AddVoteToMessage(message.GetJumpUrl(), user.Username, true, guildId);
-                    var msg = await _apiService.CheckIfMessageAlreadyPersistedAsync(message.GetJumpUrl(), guildId);
-                    await user.SendMessageAsync($"Thanks for voting for {message.Author.Username}'s message!, it now has {msg?.voteCount} votes.");
-                }
+                // if (channel is ITextChannel textChannel && isPersisted is not null)
+                // {
+                //     var ephemeralMessage = await textChannel.SendMessageAsync(
+                //         text: $"{reaction.User.Value.Mention}, thanks for voting for {message.Author.Username}'s message! It now has {isPersisted?.voteCount} votes.",
+                //         flags: MessageFlags.Ephemeral);
+                //
+                //     // Optionally, delete the ephemeral message after a short delay
+                //     _ = Task.Delay(TimeSpan.FromSeconds(3))
+                //         .ContinueWith(_ => ephemeralMessage.DeleteAsync());
+                // }
 
                 if (isPersisted is null)
                 {
@@ -260,7 +267,17 @@ public class InteractionHandlingService : IHostedService
                 // remove vote from message
                 await _apiService.AddVoteToMessage(message.GetJumpUrl(), reaction.User.Value.Username, false, _helpers.GetGuildIdFromMessageLink(message.GetJumpUrl()));
                 var voteCount = isPersisted.voteCount - 1 ;
-                await reaction.User.Value.SendMessageAsync($"You have removed your vote from this message, the message now has {voteCount} votes.");
+                
+                // if (channel is ITextChannel textChannel)
+                // {
+                //     var ephemeralMessage = await textChannel.SendMessageAsync(
+                //         text: $"{reaction.User.Value.Mention}, thanks for voting for {message.Author.Username}'s message! It now has {isPersisted?.voteCount} votes.",
+                //         flags: MessageFlags.Ephemeral);
+                //
+                //     // Optionally, delete the ephemeral message after a short delay
+                //     _ = Task.Delay(TimeSpan.FromSeconds(3))
+                //         .ContinueWith(_ => ephemeralMessage.DeleteAsync());
+                // }
             }
         }
     }
