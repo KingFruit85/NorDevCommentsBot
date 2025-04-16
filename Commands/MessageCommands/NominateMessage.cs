@@ -63,19 +63,20 @@ public class NominateMessage(
         }
 
         var voteButtons = new ComponentBuilder()
-            // .WithButton(
-            //     "👍🏻",
-            //     $"vote:true,{nominatedMessageLink}",
-            //     ButtonStyle.Success,
-            //     row: 0)
-            // .WithButton(
-            //     "💩",
-            //     $"vote:false,{nominatedMessageLink}",
-            //     ButtonStyle.Danger,
-            //     row: 0)
             .WithButton(
-                "❔",
+                "👍🏻",
+                $"vote:true,{nominatedMessageLink}",
+                ButtonStyle.Success,
+                row: 0)
+            .WithButton(
+                "💩",
+                $"vote:false,{nominatedMessageLink}",
+                ButtonStyle.Danger,
+                row: 0)
+            .WithButton(
+                "ℹ️",
                 "info_button",
+                ButtonStyle.Secondary,
                 row: 0
             )
             .WithButton(

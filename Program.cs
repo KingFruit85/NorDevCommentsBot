@@ -9,13 +9,14 @@ using NorDevBestOfBot;
 using NorDevBestOfBot.Extensions;
 using NorDevBestOfBot.Models.Options;
 using NorDevBestOfBot.Services;
-using NorDevBestOfBot.Services.Scheduling;
+using NorDevBestOfBot.Services.ScheduledJobs;
 using Serilog;
 
 using var host = Host.CreateDefaultBuilder(args)
     .UseSerilog((_, loggerConfiguration) => loggerConfiguration
         .MinimumLevel.Verbose()
         .Enrich.FromLogContext()
+        .MinimumLevel.Override("Quartz", Serilog.Events.LogEventLevel.Warning) // Suppress Quartz "Batch acquisition of x triggers" logs as they are spammy
         .WriteTo.Console())
     .ConfigureAppConfiguration(config => { })
     .ConfigureServices((builderContext, services) =>
@@ -42,6 +43,9 @@ using var host = Host.CreateDefaultBuilder(args)
             .AddDefaultAWSOptions(builderContext.Configuration.GetAWSOptions())
             .AddAWSService<IAmazonS3>();
 
+        services.AddSingleton<PostRandomCommentJob>();
+        services.AddHostedService<SchedulerService>();
+
         services
             .AddSingleton(new HttpClient())
             .AddSingleton(new DiscordSocketClient(config)) // Add the discord client to services
@@ -53,7 +57,6 @@ using var host = Host.CreateDefaultBuilder(args)
             .AddSingleton<AmazonS3Service>()
             .AddSingleton<CloudinaryService>()
             .AddHostedService<InteractionHandlingService>()
-            .AddSingleton<BackgroundScheduler>()
             .AddSingleton<Helpers>()
             .AddHostedService<Startup>();
     })

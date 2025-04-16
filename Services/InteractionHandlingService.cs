@@ -66,6 +66,7 @@ public class InteractionHandlingService : IHostedService
             
             foreach (var guild in _discord.Guilds)
             {
+                _logger.LogInformation("Guild found {id}", guild);
                 _logger.LogInformation("Registering all commands for guild {id}", guild.Id);
                 try
                 {
@@ -170,17 +171,30 @@ public class InteractionHandlingService : IHostedService
             try
             {
                 var isPersisted = await _apiService.CheckIfMessageAlreadyPersistedAsync(message.GetJumpUrl(),guildId);
-                // if (channel is ITextChannel textChannel && isPersisted is not null)
-                // {
-                //     var ephemeralMessage = await textChannel.SendMessageAsync(
-                //         text: $"{reaction.User.Value.Mention}, thanks for voting for {message.Author.Username}'s message! It now has {isPersisted?.voteCount} votes.",
-                //         flags: MessageFlags.Ephemeral);
-                //
-                //     // Optionally, delete the ephemeral message after a short delay
-                //     _ = Task.Delay(TimeSpan.FromSeconds(3))
-                //         .ContinueWith(_ => ephemeralMessage.DeleteAsync());
-                // }
-
+                
+                // if message is not null, add vote to message
+                if (isPersisted?.voters != null)
+                {
+                    var userHasVoted = isPersisted.voters.Contains(user.Username);
+                    if (userHasVoted) return;
+                    // add vote to message
+                    await _apiService.AddVoteToMessage(message.GetJumpUrl(), user.Username, true, guildId);
+                    var voteCount = isPersisted.voteCount + 1;
+                    
+                    // if (channel is ITextChannel textChannel)
+                    // {
+                    //     var ephemeralMessage = await textChannel.SendMessageAsync(
+                    //         text: $"{reaction.User.Value.Mention}, thanks for voting for {message.Author.Username}'s message! It now has {isPersisted?.voteCount} votes.",
+                    //         flags: MessageFlags.Ephemeral);
+                    //
+                    //     // Optionally, delete the ephemeral message after a short delay
+                    //     _ = Task.Delay(TimeSpan.FromSeconds(3))
+                    //         .ContinueWith(_ => ephemeralMessage.DeleteAsync());
+                    // }
+                }
+                else
+                
+                
                 if (isPersisted is null)
                 {
                     Console.WriteLine($"message not persisted, persisting message and adding vote");

@@ -4,7 +4,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NorDevBestOfBot.Models.Options;
-using NorDevBestOfBot.Services.Scheduling;
 
 namespace NorDevBestOfBot;
 
