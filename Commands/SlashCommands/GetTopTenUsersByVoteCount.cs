@@ -5,21 +5,15 @@ using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class GetTopTenUsersByVoteCount : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
+public class GetTopTenUsersByVoteCount(ApiService apiService)
+    : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
-    private readonly ApiService _apiService;
-
-    public GetTopTenUsersByVoteCount(ApiService apiService)
-    {
-        _apiService = apiService;
-    }
-
     [SlashCommand("get-top-ten-users-by-vote-count", "Gets the top ten users ordered by the sum of their vote counts.")]
     public async Task Handle([Summary(description: "Hide this post?")] bool isEphemeral = true)
     {
         await DeferAsync(isEphemeral);
 
-        var response = await _apiService.GetTopTenUsersByVoteCount(Context.Guild.Id);
+        var response = await apiService.GetTopTenUsersByVoteCount(Context.Guild.Id);
 
         if (response is null || response.Count < 1)
             await FollowupAsync("No user voting history was found for this server");

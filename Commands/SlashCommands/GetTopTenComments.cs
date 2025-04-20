@@ -6,18 +6,10 @@ using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
+public class GetTopTenComments(
+    ApiService apiService,
+    DiscordSocketClient client) : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
-    private readonly ApiService _apiService;
-    private readonly DiscordSocketClient _client;
-
-    public GetTopTenComments(ApiService apiService,
-        DiscordSocketClient client)
-    {
-        _apiService = apiService;
-        _client = client;
-    }
-
     [SlashCommand("get-top-ten-comments", "Gets the top ten comments of all time from the server.")]
     public async Task Handle([Summary(description: "Hide this post?")] bool isEphemeral = true)
     {
@@ -28,7 +20,7 @@ public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext<
 
         try
         {
-            var response = await _apiService.GetTopTenComments(Context.Guild.Id);
+            var response = await apiService.GetTopTenComments(Context.Guild.Id);
 
             if (response is null)
             {
@@ -44,7 +36,7 @@ public class GetTopTenComments : InteractionModuleBase<SocketInteractionContext<
                 if (comment.messageLink != null)
                 {
                     var (guildId, channelId, messageId) = ParseMessageLink(comment.messageLink);
-                    var guild = _client.GetGuild(guildId);
+                    var guild = client.GetGuild(guildId);
                     var originChannel = guild.GetTextChannel(channelId);
 
                     var nominatedMessage = await originChannel.GetMessageAsync(messageId);

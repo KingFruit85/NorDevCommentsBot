@@ -68,7 +68,6 @@ public class ApiService
             return false;
         }
 
-        // Create a new HttpRequestMessage
         var request = new HttpRequestMessage(HttpMethod.Post, "messages/upsertmessage");
 
         // Add the API key to the request headers
@@ -77,22 +76,20 @@ public class ApiService
         // Set the content of the request
         request.Content = JsonContent.Create(comment);
 
-        // Send the request
         var response = await _httpClient.SendAsync(request);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
-            _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,
-                response.Content.Headers);
-        }
+        if (response.IsSuccessStatusCode) return response.IsSuccessStatusCode;
+        
+        _logger.LogError("POST request failed with status code: {statusCode}", response.StatusCode);
+        _logger.LogError("Request message: {message}, headers: {headers}", response.RequestMessage,
+            response.Content.Headers);
 
         return response.IsSuccessStatusCode;
     }
 
     public async Task<Comment?> GetRandomComment(ulong guildId)
     {
-        return await GetFromJsonAsync<Comment?>("messages/random?guildId=" + guildId);
+        return await GetFromJsonAsync<Comment?>("messages/GetRandomGuildMessage?guildId=" + guildId);
     }
 
     public async Task<List<Comment>?> GetAllComments(ulong guildId)
@@ -102,29 +99,29 @@ public class ApiService
 
     public async Task<List<Comment>?> GetThisMonthsComments(ulong guildId)
     {
-        return await GetFromJsonAsync<List<Comment>?>("messages/getthismonthscomments?guildId=" + guildId);
+        return await GetFromJsonAsync<List<Comment>?>("messages/GetTopTenGuildCommentsForCurrentMonth?guildId=" + guildId);
     }
 
     public async Task<List<Comment>?> GetTopTenComments(ulong guildId)
     {
-        return await GetFromJsonAsync<List<Comment>?>("messages/gettoptencomments?guildId=" + guildId);
+        return await GetFromJsonAsync<List<Comment>?>("messages/GetTopTenGuildCommentsByVoteCount?guildId=" + guildId);
     }
 
     public async Task<Dictionary<string, int>?> GetTopTenUsersByPostCount(ulong guildId)
     {
-        return await GetFromJsonAsync<Dictionary<string, int>?>("messages/gettoptenusersbypostcount?guildId=" +
+        return await GetFromJsonAsync<Dictionary<string, int>?>("messages/GetTopTenUsersByPostCount?guildId=" +
                                                                 guildId);
     }
 
     public async Task<Dictionary<string, int>?> GetTopTenUsersByVoteCount(ulong guildId)
     {
-        return await GetFromJsonAsync<Dictionary<string, int>?>("messages/gettoptenusersbyvotecount?guildId=" +
+        return await GetFromJsonAsync<Dictionary<string, int>?>("messages/GetGuildTopTenUsersByVoteCount?guildId=" +
                                                                 guildId);
     }
 
-    public async Task<List<Comment>?> GetUsersTopFiveComments(IUser user, ulong guildId)
+    public async Task<List<Comment>?> GetUsersTopTenComments(IUser user, ulong guildId)
     {
-        return await GetFromJsonAsync<List<Comment>?>($"messages/getalluserscomments?user={user}&guildId={guildId}");
+        return await GetFromJsonAsync<List<Comment>?>($"messages/GetUsersTopTenCommentsByVoteCount?user={user}&guildId={guildId}");
     }
 
     public async Task<Comment?> CheckIfMessageAlreadyPersistedAsync(string messageLink, ulong guildId)
@@ -140,7 +137,7 @@ public class ApiService
     public async Task<bool> AddVoteToMessage(string messageLink, string username, bool isVote, ulong guildId)
     {
         var url =
-            $"messages/addvotetomessage?messageLink={Uri.EscapeDataString(messageLink)}&username={Uri.EscapeDataString(username)}&votedYes={isVote}&guildId={guildId}";
+            $"messages/AddVoteToMessage?messageLink={Uri.EscapeDataString(messageLink)}&username={Uri.EscapeDataString(username)}&votedYes={isVote}&guildId={guildId}";
 
         try
         {
@@ -164,7 +161,7 @@ public class ApiService
     {
         try
         {
-            var response = await _httpClient.PostAsync("messages/savecomment?guildId=" + guildId, content);
+            var response = await _httpClient.PostAsync("Messages/SaveMessage?guildId=" + guildId, content);
             _logger.LogInformation("Response: {response}", response);
 
             if (response.IsSuccessStatusCode) return response.IsSuccessStatusCode;

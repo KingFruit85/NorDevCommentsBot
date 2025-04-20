@@ -1,4 +1,3 @@
-using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
@@ -6,7 +5,7 @@ using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.SlashCommands.AdminCommands;
 
-public class GetGuildConfig(ApiService apiService, ILogger<GetRandomComment> logger)
+public class GetGuildConfig(ApiService apiService, ILogger<GetGuildConfig> logger)
     : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     // [RequireUserPermission(GuildPermission.Administrator)]

@@ -1,8 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using NorDevBestOfBot.Models.Options;
 using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot;
@@ -10,8 +8,7 @@ namespace NorDevBestOfBot;
 public class Helpers(
     ILogger<Helpers> logger,
     ApiService apiService,
-    AmazonS3Service amazonS3Service,
-    IOptions<ServerOptions> serverOptions)
+    AmazonS3Service amazonS3Service)
 {
     public async Task<string> GetCompressedMessageImageUrls(IMessage message)
     {
@@ -85,19 +82,20 @@ public class Helpers(
         }
 
         var voteButtons = new ComponentBuilder()
-            // .WithButton(
-            //     "👍🏻",
-            //     $"vote:true,{nominatedMessageLink}",
-            //     ButtonStyle.Success,
-            //     row: 0)
-            // .WithButton(
-            //     "💩",
-            //     $"vote:false,{nominatedMessageLink}",
-            //     ButtonStyle.Danger,
-            //     row: 0)
             .WithButton(
-                "❔",
+                "👍🏻",
+                $"vote:true,{nominatedMessageLink}",
+                ButtonStyle.Success,
+                row: 0)
+            .WithButton(
+                "💩",
+                $"vote:false,{nominatedMessageLink}",
+                ButtonStyle.Danger,
+                row: 0)
+            .WithButton(
+                "ℹ️",
                 "info_button",
+                ButtonStyle.Secondary,
                 row: 0
             )
             .WithButton(
@@ -486,8 +484,8 @@ public class Helpers(
 
     public static string GetUserNameAdjective()
     {
-        List<string> positiveAdjectives = new()
-        {
+        List<string> positiveAdjectives =
+        [
             "Happy",
             "Radiant",
             "Joyful",
@@ -538,7 +536,7 @@ public class Helpers(
             "Refreshing",
             "Alluring",
             "Captivating"
-        };
+        ];
 
         Random random = new();
 
@@ -553,25 +551,23 @@ public class Helpers(
     {
         var avatarImage = "https://www.publicdomainpictures.net/pictures/40000/velka/question-mark.jpg";
 
-        using (HttpClient client = new())
+        using HttpClient client = new();
+        try
         {
-            try
-            {
-                var response = await client.GetAsync(url);
+            var response = await client.GetAsync(url);
 
-                if (response.IsSuccessStatusCode) avatarImage = url!;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
+            if (response.IsSuccessStatusCode) avatarImage = url!;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($@"Error fetching avatar image from URL: {url}, using default avatar image. {ex.Message}");
         }
 
         return avatarImage;
     }
 
     // Function to check if an attachment URL is an image
-    public static bool IsImageAttachment(string filename)
+    private static bool IsImageAttachment(string filename)
     {
         string[] imageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
         var parts = filename.Split('.');
@@ -582,7 +578,7 @@ public class Helpers(
         return imageExtensions.Contains(ext);
     }
 
-    public static bool IsAudioAttachment(string filename)
+    private static bool IsAudioAttachment(string filename)
     {
         string[] audioExtensions = { ".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac" };
         var parts = filename.Split('.');
@@ -592,7 +588,7 @@ public class Helpers(
         return audioExtensions.Contains(ext);
     }
 
-    public static bool IsVideoAttachment(string filename)
+    private static bool IsVideoAttachment(string filename)
     {
         string[] videoExtensions = { ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm" };
         var parts = filename.Split('.');
@@ -740,7 +736,7 @@ public class Helpers(
             }
             else
             {
-                Console.WriteLine(@"Refrenced Message is null");
+                Console.WriteLine(@"Referenced Message is null");
             }
         }
 

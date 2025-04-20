@@ -7,12 +7,12 @@ using NorDevBestOfBot.Extensions;
 
 namespace NorDevBestOfBot.Services.ScheduledJobs;
 
-public class PostRandomCommentJob : IJob
+public class PostRandomCommentJob(
+    DiscordSocketClient client,
+    ApiService apiService,
+    ILogger<PostRandomCommentJob> logger)
+    : IJob
 {
-    private readonly DiscordSocketClient _client;
-    private readonly ApiService _apiService;
-    private readonly ILogger<PostRandomCommentJob> _logger;
-
     private readonly List<string> _dailyMessages =
     [
         "Here's a gem I've dug up from the archives for your enjoyment today! ✨",
@@ -48,41 +48,35 @@ public class PostRandomCommentJob : IJob
     ];
 
 
-    public PostRandomCommentJob(DiscordSocketClient client, ApiService apiService, ILogger<PostRandomCommentJob> logger)
-    {
-        _client = client;
-        _apiService = apiService;
-        _logger = logger;
-    }
-
     public async Task Execute(IJobExecutionContext context)
     {
         try
         {
-            _logger.LogInformation("Executing scheduled job at {time}", DateTime.Now);
+            logger.LogInformation("Executing scheduled job at {time}", DateTime.Now);
 
-            foreach (var guild in _client.Guilds)
+            foreach (var guild in client.Guilds)
             {
+                logger.LogInformation("Guild {guildId}", guild.Id);
                 var channels = guild.TextChannels;
 
                 var channelId = channels
-                    .Where(c => c.Name is "lobby"
-                        or "general") // TODO: This sucks, think of a way to pull this value from the server settings in mongo.
+                    .Where(c => c.Id is 680873189106384988
+                        or 1054500340063555606) // TODO: This sucks, think of a way to pull this value from the server settings in mongo.
                     .Select(c => c.Id)
                     .FirstOrDefault();
-                _logger.LogInformation("channel {channelId}", channelId);
+                logger.LogInformation("channel {channelId}", channelId);
 
                 if (channelId == 0)
                 {
-                    _logger.LogWarning("No channel found");
+                    logger.LogWarning("No channel found");
                     continue;
                 }
 
-                var response = await _apiService.GetRandomComment(guild.Id);
-
+                var response = await apiService.GetRandomComment(guild.Id);
+                
                 if (response is null) continue;
 
-                _logger.LogInformation("attempting to send message {msgId}", response.messageId);
+                logger.LogInformation("attempting to send message {msgId}", response.messageId);
                 var randomColour = ColourExtensions.GetRandomColour();
                 var reply = await CommentEmbed.CreateEmbedAsync(response, randomColour);
                 var builtEmbed = reply.First().Build();
@@ -94,8 +88,7 @@ public class PostRandomCommentJob : IJob
                         url: response.messageLink,
                         row: 1);
 
-                var chan = _client.GetChannel(channelId) as IMessageChannel;
-                if (chan != null)
+                if (client.GetChannel(channelId) is IMessageChannel chan)
                 {
                     
                     var randomMessage = _dailyMessages[new Random().Next(_dailyMessages.Count)];
@@ -105,13 +98,13 @@ public class PostRandomCommentJob : IJob
                 }
                 else
                 {
-                    _logger.LogError("Channel was not a message channel");
+                    logger.LogError("Channel was not a message channel");
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Exception while posting random comment");
+            logger.LogError(ex, "Exception while posting random comment");
         }
     }
 }

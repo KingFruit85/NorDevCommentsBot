@@ -7,12 +7,12 @@ using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.SlashCommands;
 
-public class GetUsersTopFiveComments(ApiService apiService)
+public class GetUsersTopTenComments(ApiService apiService)
     : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
-    [SlashCommand("get-users-top-five-comments", "Gets the top five comments for a user.")]
+    [SlashCommand("get-users-top-ten-comments", "Gets the top ten comments for a user in this guild.")]
     public async Task Handle(
-        [Summary(description: "The user to get the top five comments for.")]
+        [Summary(description: "The user to get the top ten comments for.")]
         IUser user,
         [Summary(description: "Hide this post?")]
         bool isEphemeral = true)
@@ -23,12 +23,12 @@ public class GetUsersTopFiveComments(ApiService apiService)
 
         try
         {
-            var response = await apiService.GetUsersTopFiveComments(user, Context.Guild.Id);
+            var response = await apiService.GetUsersTopTenComments(user, Context.Guild.Id);
 
             if (response?.Count < 1 || response is null)
                 await FollowupAsync($"The user {user} was not found or does not have any nominated comments");
 
-            List<Embed> comments = new();
+            List<Embed> comments = [];
 
             foreach (var (comment, index) in response!.Take(5).Select((comment, index) => (comment, index)))
             {

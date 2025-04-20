@@ -16,7 +16,7 @@ using var host = Host.CreateDefaultBuilder(args)
     .UseSerilog((_, loggerConfiguration) => loggerConfiguration
         .MinimumLevel.Verbose()
         .Enrich.FromLogContext()
-        .MinimumLevel.Override("Quartz", Serilog.Events.LogEventLevel.Warning) // Suppress Quartz "Batch acquisition of x triggers" logs as they are spammy
+        // .MinimumLevel.Override("Quartz", Serilog.Events.LogEventLevel.Warning) // Suppress Quartz "Batch acquisition of x triggers" logs as they are spammy
         .WriteTo.Console())
     .ConfigureAppConfiguration(config => { })
     .ConfigureServices((builderContext, services) =>

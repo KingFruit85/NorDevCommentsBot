@@ -15,30 +15,29 @@ public class GetRandomComment(ApiService apiService, ILogger<GetRandomComment> l
     public async Task Handle([Summary(description: "Hide this post?")] bool isEphemeral = true)
     {
         await DeferAsync(isEphemeral);
-
+        
         try
         {
             var response = await apiService.GetRandomComment(Context.Guild.Id);
-
-            if (response is not null)
+            
+            if (response is null)
             {
-                var randomColour = ColourExtensions.GetRandomColour();
-                var reply = await CommentEmbed.CreateEmbedAsync(response, randomColour);
-                var builtEmbed = reply.First().Build();
-
-                var voteButtons = new ComponentBuilder()
-                    .WithButton(
-                        "Take me to the post 📫",
-                        style: ButtonStyle.Link,
-                        url: response.messageLink,
-                        row: 1);
-
-                await FollowupAsync(embed: builtEmbed, components: voteButtons.Build());
+                await FollowupAsync("No comments found for this guild.");
+                return;
             }
-            else
-            {
-                await FollowupAsync("No comments found.");
-            }
+
+            var randomColour = ColourExtensions.GetRandomColour();
+            var reply = await CommentEmbed.CreateEmbedAsync(response, randomColour);
+            var builtEmbed = reply.First().Build();
+
+            var voteButtons = new ComponentBuilder()
+                .WithButton(
+                    "Take me to the post 📫",
+                    style: ButtonStyle.Link,
+                    url: response.messageLink,
+                    row: 1);
+
+            await FollowupAsync(embed: builtEmbed, components: voteButtons.Build());
         }
         catch (Exception ex)
         {
