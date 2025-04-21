@@ -42,22 +42,33 @@ public class SchedulerService(ILogger<SchedulerService> logger, IServiceProvider
     private async Task SetupJob(CancellationToken cancellationToken)
     {
         // Define the job
-        var job = JobBuilder.Create<PostRandomCommentJob>()
+        var dailyRandomCommentJob = JobBuilder.Create<PostRandomCommentJob>()
             .WithIdentity("dailyCommentJob", "discordBotGroup")
             .Build();
         
         // Create a trigger that fires daily at 9:00 AM
-        var trigger = TriggerBuilder.Create()
+        var dailyRandomCommentJobTrigger = TriggerBuilder.Create()
             .WithIdentity("dailyCommentTrigger", "discordBotGroup")
             .WithSchedule(CronScheduleBuilder.DailyAtHourAndMinute(09, 20).InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time")))
             .Build();
         
-        // Schedule the job
+        var monthlyRecapJob = JobBuilder.Create<PostMonthlyRecapJob>()
+            .WithIdentity("monthlyRecapJob", "discordBotGroup")
+            .Build();
+        
+        var monthlyRecapJobTrigger = TriggerBuilder.Create()
+            .WithIdentity("monthlyRecapTrigger", "discordBotGroup")
+            .WithSchedule(CronScheduleBuilder.CronSchedule("0 20 9 L * ?").InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time")))
+            .Build();
+        
+        // Schedule the jobs
         if (_scheduler == null)
         {
             throw new InvalidOperationException("Scheduler is not initialized.");
         }
-        await _scheduler.ScheduleJob(job, trigger, cancellationToken);
+        // TODO can probably use a batch method to schedule jobs
+        await _scheduler.ScheduleJob(dailyRandomCommentJob, dailyRandomCommentJobTrigger, cancellationToken);
+        await _scheduler.ScheduleJob(monthlyRecapJob, monthlyRecapJobTrigger, cancellationToken);
     }
 
     private void SetupActivationTimer()

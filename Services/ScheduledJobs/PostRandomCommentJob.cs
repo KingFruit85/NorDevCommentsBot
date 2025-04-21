@@ -52,11 +52,10 @@ public class PostRandomCommentJob(
     {
         try
         {
-            logger.LogInformation("Executing scheduled job at {time}", DateTime.Now);
+            logger.LogInformation("Executing PostRandomCommentJob job at {time}", DateTime.Now);
 
             foreach (var guild in client.Guilds)
             {
-                logger.LogInformation("Guild {guildId}", guild.Id);
                 var channels = guild.TextChannels;
 
                 var channelId = channels
@@ -64,7 +63,6 @@ public class PostRandomCommentJob(
                         or 1054500340063555606) // TODO: This sucks, think of a way to pull this value from the server settings in mongo.
                     .Select(c => c.Id)
                     .FirstOrDefault();
-                logger.LogInformation("channel {channelId}", channelId);
 
                 if (channelId == 0)
                 {

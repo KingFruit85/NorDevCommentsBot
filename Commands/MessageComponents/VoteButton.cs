@@ -3,6 +3,7 @@ using System.Text.Json;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using NorDevBestOfBot.Commands.CommandHelpers;
 using NorDevBestOfBot.Models;
 using NorDevBestOfBot.Services;
 using static System.Console;
@@ -19,16 +20,12 @@ public class VoteButton(
     public async Task Handle(bool isVote, string nominatedMessageLink)
     {
         await DeferAsync();
-
-        var parts = nominatedMessageLink.Split('/');
-
-        var guildId = parts[4];
-        var channelId = parts[5];
-        var messageId = parts[6];
-
-        var guild = client.GetGuild(ulong.Parse(guildId));
-        var channel = guild.GetTextChannel(ulong.Parse(channelId));
-        var message = await channel.GetMessageAsync(ulong.Parse(messageId));
+        
+        var (guildId, channelId, messageId) = ParseMessageLink.Parse(nominatedMessageLink);
+        
+        var guild = client.GetGuild(guildId);
+        var channel = guild.GetTextChannel(channelId);
+        var message = await channel.GetMessageAsync(messageId);
 
         var voteCountToAdd = isVote ? 1 : -1;
 
@@ -82,8 +79,8 @@ public class VoteButton(
         var comment = new Comment
         {
             messageLink = nominatedMessageLink.Trim(),
-            messageId = messageId,
-            serverId = guildId,
+            messageId = messageId.ToString(),
+            serverId = guildId.ToString(),
             userName = message.Author.Username,
             userTag = message.Author.Username,
             comment = message.Content,
@@ -113,7 +110,7 @@ public class VoteButton(
 
             if (attachmentUrls.Count != 0)
             {
-                // iterate over the attachments and call the image cloudiany service to get a compressed image url then upload to s3
+                // iterate over the attachments and call the image cloudinary service to get a compressed image url then upload to s3
                 foreach (var url in attachmentUrls)
                 {
                     var compressedImageUrl = await cloudinaryService.UploadImageAndReturnCompressedImageUrl(url);
@@ -129,24 +126,24 @@ public class VoteButton(
         // Do the same if the message refs another message
         if (message is IUserMessage userMessage)
         {
-            var refrencedMessage = userMessage.ReferencedMessage;
+            var referencedMessage = userMessage.ReferencedMessage;
 
-            if (refrencedMessage != null)
+            if (referencedMessage != null)
             {
-                comment.quotedMessage = refrencedMessage.Content;
-                comment.quotedMessageAuthor = refrencedMessage.Author.Username;
-                comment.quotedMessageAvatarLink = refrencedMessage.Author.GetAvatarUrl();
+                comment.quotedMessage = referencedMessage.Content;
+                comment.quotedMessageAuthor = referencedMessage.Author.Username;
+                comment.quotedMessageAvatarLink = referencedMessage.Author.GetAvatarUrl();
                 comment.quotedMessageAuthorNickname = "";
-                comment.quotedMessageMessageLink = refrencedMessage.GetJumpUrl().Trim();
+                comment.quotedMessageMessageLink = referencedMessage.GetJumpUrl().Trim();
 
                 var quotedMessageAttachmentUrls = new List<string>();
 
-                if (refrencedMessage.Attachments.Count > 0 || refrencedMessage.Embeds.Count > 0)
+                if (referencedMessage.Attachments.Count > 0 || referencedMessage.Embeds.Count > 0)
                 {
                     quotedMessageAttachmentUrls.AddRange(
-                        refrencedMessage.Attachments.Select(attachment => attachment.Url));
+                        referencedMessage.Attachments.Select(attachment => attachment.Url));
 
-                    quotedMessageAttachmentUrls.AddRange(refrencedMessage.Embeds.Select(embed => embed.Url));
+                    quotedMessageAttachmentUrls.AddRange(referencedMessage.Embeds.Select(embed => embed.Url));
 
                     if (quotedMessageAttachmentUrls.Count != 0)
                     {
