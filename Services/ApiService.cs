@@ -20,6 +20,44 @@ public class ApiService
         _logger = logger;
     }
 
+    public async Task<bool> AddBotFeedback(BotFeedback feedback)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("BotFeedback/SaveFeedback", feedback);
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Bot feedback added successfully");
+            return true;
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Add bot feedback failed: {Message}", e.Message);
+        }
+        return false;
+    }
+    
+    public async Task KeepDatabaseAwake()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("messages/keepDbAwake");
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Keep Database Awake request sent successfully");
+            }
+            else
+            {
+                _logger.LogError("Keep Database Awake failed: {Reason}", response.ReasonPhrase);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Keep Database Awake failed: {Message}", ex.Message);
+        }
+    }
+
     public async Task<bool> SetBlacklistedChannels(List<ulong> channelIds, ulong guildId)
     {
         var url = "messages/setBlacklistedChannels?guildId=" + guildId;
@@ -128,7 +166,7 @@ public class ApiService
     {
         _logger.LogInformation("Checking if message has already been persisted");
         var response =
-            await GetFromJsonAsync<Comment?>($"messages/GetMessageByMessageLink?id={messageLink}&guildId={guildId}");
+            await GetFromJsonAsync<Comment?>($"messages/GetMessageByMessageLink?messageLink={messageLink}");
         if (response is null) _logger.LogInformation("message not found in database");
 
         return response ?? null;

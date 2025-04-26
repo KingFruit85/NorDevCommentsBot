@@ -20,16 +20,17 @@ public class VoteButton(
     public async Task Handle(bool isVote, string nominatedMessageLink)
     {
         await DeferAsync();
-        
+
         var (guildId, channelId, messageId) = ParseMessageLink.Parse(nominatedMessageLink);
-        
+
         var guild = client.GetGuild(guildId);
         var channel = guild.GetTextChannel(channelId);
         var message = await channel.GetMessageAsync(messageId);
 
         var voteCountToAdd = isVote ? 1 : -1;
 
-        var persistedMessage = await apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink, Context.Guild.Id);
+        var persistedMessage =
+            await apiService.CheckIfMessageAlreadyPersistedAsync(nominatedMessageLink, Context.Guild.Id);
 
         if (persistedMessage is not null && persistedMessage.voters!.Contains(Context.User.Username))
         {
@@ -96,7 +97,6 @@ public class VoteButton(
             quotedMessageImage = "",
             s3QuotedMessageImageUrl = "",
             nickname = message.Author.Username,
-            quotedMessageAuthorNickname = "",
             quotedMessageMessageLink = ""
         };
 
@@ -133,7 +133,6 @@ public class VoteButton(
                 comment.quotedMessage = referencedMessage.Content;
                 comment.quotedMessageAuthor = referencedMessage.Author.Username;
                 comment.quotedMessageAvatarLink = referencedMessage.Author.GetAvatarUrl();
-                comment.quotedMessageAuthorNickname = "";
                 comment.quotedMessageMessageLink = referencedMessage.GetJumpUrl().Trim();
 
                 var quotedMessageAttachmentUrls = new List<string>();

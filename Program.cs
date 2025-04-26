@@ -44,6 +44,8 @@ using var host = Host.CreateDefaultBuilder(args)
             .AddAWSService<IAmazonS3>();
 
         services.AddSingleton<PostRandomCommentJob>();
+        services.AddSingleton<PostMonthlyRecapJob>();
+        services.AddSingleton<KeepDbAwakeJob>();
         services.AddHostedService<SchedulerService>();
 
         services

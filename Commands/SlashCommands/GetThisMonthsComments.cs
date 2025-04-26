@@ -35,12 +35,14 @@ public class GetThisMonthsComments(
 
         if (comments.Any())
         {
-            var (linkButton, embeds) = await PostCommentsHelper.GetMultipleCommentEmbeds(client, comments);
-
-            await FollowupAsync(
-                components: linkButton.Build(),
-                embeds: embeds.ToArray(),
-                ephemeral: isEphemeral);
+            foreach (var comment in comments)
+            {
+                var (linkButton, embeds) = await PostCommentsHelper.GetMultipleCommentEmbeds(client, [comment]);
+                await FollowupAsync(
+                    components: linkButton.Build(),
+                    embeds: embeds.ToArray(),
+                    ephemeral: isEphemeral);
+            }
 
             await FollowupAsync(
                 "I hope you enjoyed reading though this month's comments as much as I did 🤗",

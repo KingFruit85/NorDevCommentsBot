@@ -22,6 +22,5 @@ public record Comment
     
     public string? s3QuotedMessageImageUrl { get; set; }
     public string? nickname { get; set; }
-    public string? quotedMessageAuthorNickname { get; set; }
     public string? quotedMessageMessageLink { get; set; }
 }

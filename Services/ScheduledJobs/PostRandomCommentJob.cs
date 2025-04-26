@@ -2,8 +2,7 @@ using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using Quartz;
-using NorDevBestOfBot.Builders;
-using NorDevBestOfBot.Extensions;
+using NorDevBestOfBot.Commands.CommandHelpers;
 
 namespace NorDevBestOfBot.Services.ScheduledJobs;
 
@@ -58,13 +57,13 @@ public class PostRandomCommentJob(
             {
                 var channels = guild.TextChannels;
 
-                var channelId = channels
+                var channelToPostMessage = channels
                     .Where(c => c.Id is 680873189106384988
                         or 1054500340063555606) // TODO: This sucks, think of a way to pull this value from the server settings in mongo.
                     .Select(c => c.Id)
                     .FirstOrDefault();
 
-                if (channelId == 0)
+                if (channelToPostMessage == 0)
                 {
                     logger.LogWarning("No channel found");
                     continue;
@@ -75,24 +74,43 @@ public class PostRandomCommentJob(
                 if (response is null) continue;
 
                 logger.LogInformation("attempting to send message {msgId}", response.messageId);
-                var randomColour = ColourExtensions.GetRandomColour();
-                var reply = await CommentEmbed.CreateEmbedAsync(response, randomColour);
-                var builtEmbed = reply.First().Build();
+                List<Embed> embeds = [];
+            
+                var (_, channel, messageId) = ParseMessageLink.Parse(response.messageLink!);
+                var message = await guild.GetTextChannel(channel).GetMessageAsync(messageId);
+                if (message is null)
+                {
+                    logger.LogWarning("message is null");
+                    continue;
+                }
+            
+                // This order means the embeds will display in the correct order original message first, then the quoted message
+                if (message.Reference != null)
+                {
+                    var quotedMessage = await guild.GetTextChannel(channel).GetMessageAsync(message.Reference!.MessageId.Value);
+                    if (quotedMessage is null)
+                    {
+                        return;
+                    }
+                    embeds.Add(Create.Embed(quotedMessage));
+                }
+                embeds.Add(Create.Embed(message));
 
                 var voteButtons = new ComponentBuilder()
                     .WithButton(
                         "Take me to the post 📫",
                         style: ButtonStyle.Link,
                         url: response.messageLink,
-                        row: 1);
+                        row: 1)
+                    ;
 
-                if (client.GetChannel(channelId) is IMessageChannel chan)
+                if (client.GetChannel(channelToPostMessage) is IMessageChannel chan)
                 {
                     
                     var randomMessage = _dailyMessages[new Random().Next(_dailyMessages.Count)];
                     
                     await chan.SendMessageAsync(text: randomMessage,
-                        embed: builtEmbed, components: voteButtons.Build());
+                        embeds: embeds.ToArray(), components: voteButtons.Build());
                 }
                 else
                 {

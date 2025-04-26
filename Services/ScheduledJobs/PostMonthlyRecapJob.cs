@@ -46,24 +46,26 @@ public class PostMonthlyRecapJob(DiscordSocketClient client, ApiService apiServi
                 
                 var response = await apiService.GetThisMonthsComments(guild.Id);
                 
-                if (response == null || !response.Any())
+                if (response == null || response.Count == 0)
                 {
                     logger.LogWarning("No comments found for this month");
                     continue;
                 }
-                
-                var (linkButton, embeds) = await PostCommentsHelper.GetMultipleCommentEmbeds(client, response);
 
-                if (client.GetChannel(channelId) is IMessageChannel chan)
+                foreach (var comment in response)
                 {
-                    await chan.SendMessageAsync(
-                        text: _monthlyMessages[new Random().Next(_monthlyMessages.Count)],
-                        embeds: embeds.ToArray(),
-                        components: linkButton.Build());
-                }
-                else
-                {
-                    logger.LogError("Channel was not a message channel");
+                    var (linkButton, embeds) = await PostCommentsHelper.GetMultipleCommentEmbeds(client, [comment]);
+                    if (client.GetChannel(channelId) is IMessageChannel chan)
+                    {
+                        await chan.SendMessageAsync(
+                            text: _monthlyMessages[new Random().Next(_monthlyMessages.Count)],
+                            embeds: embeds.ToArray(),
+                            components: linkButton.Build());
+                    }
+                    else
+                    {
+                        logger.LogError("Channel was not a message channel");
+                    }
                 }
             }
         }

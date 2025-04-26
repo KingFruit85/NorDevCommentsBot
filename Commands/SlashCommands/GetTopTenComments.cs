@@ -18,7 +18,6 @@ public class GetTopTenComments(
         try
         {
             var response = await apiService.GetTopTenComments(Context.Guild.Id);
-
             if (response is null || response.Count == 0)
             {
                 await FollowupAsync(

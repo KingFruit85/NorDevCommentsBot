@@ -4,15 +4,9 @@ using System.Text.Json;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using NorDevBestOfBot.BatchJobs;
-using NorDevBestOfBot.Commands.MessageCommands;
 using NorDevBestOfBot.Models;
-using NorDevBestOfBot.Models.Options;
 
 namespace NorDevBestOfBot.Services;
 
@@ -89,6 +83,7 @@ public class InteractionHandlingService : IHostedService
         _discord.MessageCommandExecuted += MessageCommandExecuted;
         _discord.ReactionAdded += HandleReactionAdded;
         _discord.ReactionRemoved += HandleReactionRemoved;
+        _discord.ModalSubmitted += ModalSubmitted;
 
         await _interactions.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
     }
@@ -117,6 +112,22 @@ public class InteractionHandlingService : IHostedService
             }
             _logger.LogInformation("Some error");
 
+        }
+    }
+    
+    private async Task ModalSubmitted(SocketModal modal)
+    {
+        var context = new SocketInteractionContext<SocketModal>(_discord, modal);
+        try
+        {
+            var result = await _interactions.ExecuteCommandAsync(context, _services);
+            if (!result.IsSuccess)
+                await context.Channel.SendMessageAsync(result.ToString());
+        }
+        catch (Exception ex)
+        {
+            if (!context.Interaction.HasResponded)
+                await context.Interaction.RespondAsync($"An error occurred: {ex.Message}", ephemeral: true);
         }
     }
 
@@ -238,7 +249,6 @@ public class InteractionHandlingService : IHostedService
                         quotedMessageImage = "",
                         s3QuotedMessageImageUrl = referencedMessageS3ImageUrls,
                         nickname = message.Author.Username,
-                        quotedMessageAuthorNickname = "",
                         quotedMessageMessageLink = referencedMessageLink
                     };
                     

@@ -2,8 +2,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
-using NorDevBestOfBot.Builders;
-using NorDevBestOfBot.Extensions;
+using NorDevBestOfBot.Commands.CommandHelpers;
 using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.SlashCommands;
@@ -14,7 +13,6 @@ public class GetRandomComment(ApiService apiService, ILogger<GetRandomComment> l
     [SlashCommand("get-random-comment", "Gets a random comment from the database.")]
     public async Task Handle([Summary(description: "Hide this post?")] bool isEphemeral = true)
     {
-        await DeferAsync(isEphemeral);
         
         try
         {
@@ -22,14 +20,33 @@ public class GetRandomComment(ApiService apiService, ILogger<GetRandomComment> l
             
             if (response is null)
             {
-                await FollowupAsync("No comments found for this guild.");
+                await RespondAsync("No comments found for this guild.", ephemeral: isEphemeral);
                 return;
             }
+            
+            List<Embed> embeds = [];
+            
+            var (_, channelId, messageId) = ParseMessageLink.Parse(response.messageLink!);
+            var message = await Context.Guild.GetTextChannel(channelId).GetMessageAsync(messageId);
+            if (message is null)
+            {
+                await RespondAsync("Comment was not found in the discord database.", ephemeral: isEphemeral);
+                return;
+            }
+            
+            // This order means the embeds will display in the correct order original message first, then the quoted message
+            if (message.Reference != null)
+            {
+                var quotedMessage = await Context.Guild.GetTextChannel(channelId).GetMessageAsync(message.Reference!.MessageId.Value);
+                if (quotedMessage is null)
+                {
+                    return;
+                }
+                embeds.Add(Create.Embed(quotedMessage));
+            }
+            embeds.Add(Create.Embed(message));
 
-            var randomColour = ColourExtensions.GetRandomColour();
-            var reply = await CommentEmbed.CreateEmbedAsync(response, randomColour);
-            var builtEmbed = reply.First().Build();
-
+            
             var voteButtons = new ComponentBuilder()
                 .WithButton(
                     "Take me to the post 📫",
@@ -37,12 +54,12 @@ public class GetRandomComment(ApiService apiService, ILogger<GetRandomComment> l
                     url: response.messageLink,
                     row: 1);
 
-            await FollowupAsync(embed: builtEmbed, components: voteButtons.Build());
+            await RespondAsync(embeds: embeds.ToArray(), components: voteButtons.Build(), ephemeral: isEphemeral);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, ex.Message);
-            await FollowupAsync("An error occurred while trying to get a random comment.");
+            await RespondAsync("An error occurred while trying to get a random comment.", ephemeral: isEphemeral);
         }
     }
 }
