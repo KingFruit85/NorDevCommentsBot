@@ -77,6 +77,7 @@ public class PostRandomCommentJob(
                 List<Embed> embeds = [];
             
                 var (_, channel, messageId) = ParseMessageLink.Parse(response.messageLink!);
+                logger.LogInformation("attempting to get message {msgId} from channel {channel} in guild {guildId}", messageId, channel, guild.Id);
                 var message = await guild.GetTextChannel(channel).GetMessageAsync(messageId);
                 if (message is null)
                 {

@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
+using NorDevBestOfBot.Commands.CommandHelpers;
 using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot;
@@ -188,51 +189,23 @@ public class Helpers(
             }
         }
 
-        Console.WriteLine("Sending message to channel");
+        Console.WriteLine("Sending message to channel -------------------------");
         await channel.SendMessageAsync(
             text:
-            $"**The {Helpers.GetUserNameAdjective()} {nominator.Mention}** has nominated **{nominatedMessage.Author.Mention}'s** message to be added to the best of list",
+            $"**The {GetUserNameAdjective()} {nominator.Mention}** has nominated **{nominatedMessage.Author.Mention}'s** message to be added to the best of list",
             components: voteButtons.Build(), embeds: embeds.ToArray());
 
         // Post to the general channel if the nominated message didn't originate in the general channel
 
-        var guildConfig = await apiService.GetGuildConfigAsync(guild.Id);
+        var generalChannelId = guild.Id == 680873189106384900 ? 680873189106384988 : 1054500340063555606;
+        var crossPostChannel = await guild.GetChannelAsync((ulong)generalChannelId) as ITextChannel;
+        if (crossPostChannel is null) return;
+        Console.WriteLine($"channel Id {channel.Id}, crossPostChannel Id {crossPostChannel.Id}");
 
-        if (guildConfig.CrosspostChannels is not null && guildConfig.AllowCrosspost &&
-            guildConfig.CrosspostChannels.Count > 0)
+        if (channel.Id != crossPostChannel.Id)
         {
-            List<ITextChannel> crossPostChannels = [];
-
-            foreach (var chan in guildConfig.CrosspostChannels)
-            {
-                var crossPostChannel = await guild.GetChannelAsync(chan) as ITextChannel;
-                if (crossPostChannel is not null)
-                {
-                    crossPostChannels.Add(crossPostChannel);
-                }
-            }
-
-            if (crossPostChannels.Count > 0)
-            {
-                var messageLinkButton = new ComponentBuilder()
-                    .WithButton(
-                        "Take me to the post 📫",
-                        style: ButtonStyle.Link,
-                        url: nominatedMessageLink,
-                        row: 0);
-
-                Console.WriteLine(@"Posting message to Crosspost channels");
-
-                foreach (var chan in crossPostChannels)
-                {
-                    await chan.SendMessageAsync(
-                        Helpers.GeneralChannelGreeting(channel, (SocketUser)nominator,
-                            nominatedMessage),
-                        allowedMentions: AllowedMentions.All,
-                        components: messageLinkButton.Build(),
-                        embeds: embeds.ToArray());
-                }
-            }
+            Console.WriteLine("Posting to general");
+            await CrossPostChannelsHelper.PostToChannel(embeds, nominatedMessageLink, nominatedMessage, crossPostChannel, (SocketUser)nominator);
         }
     }
 
@@ -560,13 +533,14 @@ public class Helpers(
         }
         catch (Exception ex)
         {
-            Console.WriteLine($@"Error fetching avatar image from URL: {url}, using default avatar image. {ex.Message}");
+            Console.WriteLine(
+                $@"Error fetching avatar image from URL: {url}, using default avatar image. {ex.Message}");
         }
 
         return avatarImage;
     }
 
-    // Function to check if an attachment URL is an image
+// Function to check if an attachment URL is an image
     private static bool IsImageAttachment(string filename)
     {
         string[] imageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
@@ -598,7 +572,7 @@ public class Helpers(
         return videoExtensions.Contains(ext);
     }
 
-    // Function to check if an embed is an image
+// Function to check if an embed is an image
     public static bool IsImageEmbed(IEmbed embed)
     {
         // Check the embed type and its URL

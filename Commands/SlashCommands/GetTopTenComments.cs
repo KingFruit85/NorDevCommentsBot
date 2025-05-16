@@ -1,7 +1,6 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using NorDevBestOfBot.Commands.CommandHelpers;
-using NorDevBestOfBot.Models;
 using NorDevBestOfBot.Services;
 
 namespace NorDevBestOfBot.Commands.SlashCommands;
@@ -35,9 +34,11 @@ public class GetTopTenComments(
                 embeds: embeds.ToArray(),
                 ephemeral: isEphemeral);
         }
-        catch (Exception ex)
+        catch
         {
-            throw new Exception(ex.Message);
+            await FollowupAsync(
+                "I'm really sorry but this command is currently not working.",
+                ephemeral: isEphemeral);
         }
     }
 }

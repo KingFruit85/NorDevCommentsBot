@@ -2,11 +2,13 @@ using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using NorDevBestOfBot.Commands.CommandHelpers;
+using NorDevBestOfBot.Models;
 using Quartz;
 
-namespace NorDevBestOfBot.Services.ScheduledJobs;
+namespace NorDevBestOfBot.Services.ScheduledJobs.TestJobs;
 
-public class PostMonthlyRecapJob(DiscordSocketClient client, ApiService apiService, ILogger<PostMonthlyRecapJob> logger) : IJob
+public class TestMonthlyRecapJob(DiscordSocketClient client, ApiService apiService, ILogger<TestMonthlyRecapJob> logger)
+    : IJob
 {
     private readonly List<string> _monthlyMessages =
     [
@@ -23,6 +25,7 @@ public class PostMonthlyRecapJob(DiscordSocketClient client, ApiService apiServi
         "As we bid farewell to the month, let's celebrate some of our best moments! 🎉",
         "The month has flown by! Let's take a look at some of our best moments! 🕒",
     ];
+
     public async Task Execute(IJobExecutionContext context)
     {
         try
@@ -31,36 +34,20 @@ public class PostMonthlyRecapJob(DiscordSocketClient client, ApiService apiServi
 
             foreach (var guild in client.Guilds)
             {
-                var channels = guild.TextChannels;
-                var channelId = channels
-                    .Where(c => c.Id is 680873189106384988
-                        or 1054500340063555606) // TODO: This sucks, think of a way to pull this value from the server settings in mongo.
-                    .Select(c => c.Id)
-                    .FirstOrDefault();
-                
-                if (channelId == 0)
-                {
-                    logger.LogWarning("No channel found");
-                    continue;
-                }
-                
+                if (guild.Id != 1054500338947858522) continue;
+
                 var response = await apiService.GetThisMonthsComments(guild.Id);
-                
+
                 if (response == null || response.Count == 0)
                 {
                     logger.LogWarning("No comments found for this month");
                     continue;
                 }
-                
-                var chan = client.GetChannel(channelId) as ITextChannel;
-                if (chan == null)
-                {
-                    logger.LogWarning("Channel not found");
-                    continue;
-                }
-                await chan.SendMessageAsync(
-                    text: _monthlyMessages[new Random().Next(_monthlyMessages.Count)]);
 
+                var chan = client.GetChannel(1054500340063555606) as ITextChannel;
+                await chan!.SendMessageAsync(
+                    text: _monthlyMessages[new Random().Next(_monthlyMessages.Count)]);
+                
                 foreach (var comment in response)
                 {
                     var (linkButton, embeds) = await PostCommentsHelper.GetMultipleCommentEmbeds(client, [comment]);

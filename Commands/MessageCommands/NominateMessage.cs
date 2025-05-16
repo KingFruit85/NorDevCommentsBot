@@ -43,7 +43,9 @@ public class NominateMessage(
                 await RespondAsync(helpers.UserNominatingOwnComment(Context.Interaction.User), ephemeral: true);
                 return;
             default:
-                logger.LogDebug("The EarlyReturn.Checks method returned null or an unexpected enum value: {shouldReturnEarly}", shouldReturnEarly);
+                logger.LogDebug(
+                    "The EarlyReturn.Checks method returned null or an unexpected enum value: {shouldReturnEarly}",
+                    shouldReturnEarly);
                 break;
         }
 
@@ -81,7 +83,7 @@ public class NominateMessage(
 
         var nominatedMessageEmbed = Create.Embed(nominatedMessage);
         embeds.Add(nominatedMessageEmbed);
-        
+
         // Add the comment to the database
         var data = JsonSerializer.Serialize(comment);
         var content = new StringContent(data, Encoding.UTF8, "application/json");
@@ -123,7 +125,12 @@ public class NominateMessage(
                     customId: "feedback_button",
                     row: 0)
             ;
+        
+        var generalChannelId = guildId == 680873189106384900 ? 680873189106384988 : 1054500340063555606;
 
+        // Post to the general channel if the nominated message didn't originate in the general channel
+        await CrossPostChannelsHelper.PostToChannels([(ulong)generalChannelId], embeds, nominatedMessageLink,
+            nominatedMessage, Context);
 
         // Post to an original channel
         logger.LogDebug(@"Posting message to channel message was nominated in");
@@ -132,40 +139,5 @@ public class NominateMessage(
             components: voteButtons.Build(),
             embeds: embeds.ToArray()
         );
-        
-        
-        var generalChannelId = channel.Id == 680873189106384988 ? 680873189106384988 : 1054500340063555606;
-
-        // Post to the general channel if the nominated message didn't originate in the general channel
-        var generalChannel = Context.Client.GetChannel((ulong)generalChannelId) as ITextChannel;
-
-        if (generalChannel is not null && Context.Channel.Id != generalChannel.Id)
-        {
-            var messageLinkButton = new ComponentBuilder()
-                .WithButton(
-                    "Take me to the post 📫",
-                    style: ButtonStyle.Link,
-                    url: nominatedMessageLink,
-                    row: 0)
-                .WithButton(
-                    "👍🏻",
-                    $"vote:true,{nominatedMessageLink}",
-                    ButtonStyle.Success,
-                    row: 0)
-                .WithButton(
-                    "💩",
-                    $"vote:false,{nominatedMessageLink}",
-                    ButtonStyle.Danger,
-                    row: 0);
-
-            logger.LogDebug("Posting message to Lobby");
-
-            await generalChannel.SendMessageAsync(
-                Helpers.GeneralChannelGreeting(Context.Interaction.Channel, Context.Interaction.User,
-                    nominatedMessage),
-                allowedMentions: AllowedMentions.All,
-                components: messageLinkButton.Build(),
-                embeds: embeds.ToArray());
-        }
     }
 }

@@ -6,6 +6,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using NorDevBestOfBot.Commands.CommandHelpers;
 using NorDevBestOfBot.Models;
 
 namespace NorDevBestOfBot.Services;
@@ -175,10 +176,29 @@ public class InteractionHandlingService : IHostedService
         var guildId = _helpers.GetGuildIdFromMessageLink(message.GetJumpUrl());
         var guild = _discord.GetGuild(guildId);
         var user = reaction.User.Value;
+        _logger.LogInformation("GuildId: {guildId}, UserId: {userId}", guildId, user.Id);
 
         // Check if the reaction is the one you're interested in
         if (reaction.Emote.Name == "🏆") // Replace with the emoji you're interested in
         {
+            var shouldReturnEarly = await EarlyReturn.Checks(message, _apiService, guildId, user.Id);
+            _logger.LogInformation(shouldReturnEarly.ToString());
+            if (shouldReturnEarly is not null)
+            {
+                switch (shouldReturnEarly)
+                {
+                    case EarlyReturnReason.AuthorIsBot:
+                        await user.SendMessageAsync("You cannot nominate bot messages");
+                        return;
+                    case EarlyReturnReason.UserNominatedOwnMessage:
+                        await channel.SendMessageAsync(_helpers.UserNominatingOwnComment(user));
+                        return;
+                    default:
+                        _logger.LogDebug("The EarlyReturn.Checks method returned null or an unexpected enum value: {shouldReturnEarly}", shouldReturnEarly);
+                        break;
+                }
+            }
+            
             try
             {
                 var isPersisted = await _apiService.CheckIfMessageAlreadyPersistedAsync(message.GetJumpUrl(),guildId);
@@ -190,18 +210,6 @@ public class InteractionHandlingService : IHostedService
                     if (userHasVoted) return;
                     // add vote to message
                     await _apiService.AddVoteToMessage(message.GetJumpUrl(), user.Username, true, guildId);
-                    var voteCount = isPersisted.voteCount + 1;
-                    
-                    // if (channel is ITextChannel textChannel)
-                    // {
-                    //     var ephemeralMessage = await textChannel.SendMessageAsync(
-                    //         text: $"{reaction.User.Value.Mention}, thanks for voting for {message.Author.Username}'s message! It now has {isPersisted?.voteCount} votes.",
-                    //         flags: MessageFlags.Ephemeral);
-                    //
-                    //     // Optionally, delete the ephemeral message after a short delay
-                    //     _ = Task.Delay(TimeSpan.FromSeconds(3))
-                    //         .ContinueWith(_ => ephemeralMessage.DeleteAsync());
-                    // }
                 }
                 else
                 

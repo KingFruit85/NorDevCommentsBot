@@ -24,8 +24,16 @@ public static class PostCommentsHelper
                 var (guildId, channelId, messageId) = ParseMessageLink.Parse(comment.messageLink!);
                 var guild = client.GetGuild(guildId);
                 var originChannel = guild.GetTextChannel(channelId);
-
-                var nominatedMessage = await originChannel.GetMessageAsync(messageId);
+                IMessage nominatedMessage;
+                try
+                {
+                    nominatedMessage = await originChannel.GetMessageAsync(messageId);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    continue;
+                }
 
                 IMessage? referencedMessage = nominatedMessage is IUserMessage userMessage
                     ? userMessage.ReferencedMessage
