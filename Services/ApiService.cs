@@ -125,9 +125,14 @@ public class ApiService
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<Comment?> GetRandomComment(ulong guildId)
+    public async Task<Comment?> GetRandomComment(ulong guildId, bool checkIfAlreadyPosted = false)
     {
-        return await GetFromJsonAsync<Comment?>("messages/GetRandomGuildMessage?guildId=" + guildId);
+        return await GetFromJsonAsync<Comment?>("messages/GetRandomGuildMessage?guildId=" + guildId + "&checkIfAlreadyPosted=" + checkIfAlreadyPosted);
+    }
+    
+    public async Task<RandomAlreadyPosted?> AddAlreadyPostedForGuild(ulong messageId, ulong guildId)
+    {
+        return await GetFromJsonAsync<RandomAlreadyPosted?>("messages/AddAlreadyPostedForGuild?messageId=" + messageId + "&guildId=" + guildId);
     }
 
     public async Task<List<Comment>?> GetAllComments(ulong guildId)

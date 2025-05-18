@@ -205,7 +205,7 @@ public class Helpers(
         if (channel.Id != crossPostChannel.Id)
         {
             Console.WriteLine("Posting to general");
-            await CrossPostChannelsHelper.PostToChannel(embeds, nominatedMessageLink, nominatedMessage, crossPostChannel, (SocketUser)nominator);
+            await CrossPostChannelsHelper.PostToChannel(embeds, nominatedMessageLink, nominatedMessage, crossPostChannel, (SocketUser)nominator, channel);
         }
     }
 

@@ -70,46 +70,49 @@ public class PostRandomCommentJob(
                 }
 
                 var response = await apiService.GetRandomComment(guild.Id);
-                
+
                 if (response is null) continue;
 
                 logger.LogInformation("attempting to send message {msgId}", response.messageId);
                 List<Embed> embeds = [];
-            
+
                 var (_, channel, messageId) = ParseMessageLink.Parse(response.messageLink!);
-                logger.LogInformation("attempting to get message {msgId} from channel {channel} in guild {guildId}", messageId, channel, guild.Id);
+                logger.LogInformation("attempting to get message {msgId} from channel {channel} in guild {guildId}",
+                    messageId, channel, guild.Id);
                 var message = await guild.GetTextChannel(channel).GetMessageAsync(messageId);
                 if (message is null)
                 {
                     logger.LogWarning("message is null");
                     continue;
                 }
-            
+
                 // This order means the embeds will display in the correct order original message first, then the quoted message
                 if (message.Reference != null)
                 {
-                    var quotedMessage = await guild.GetTextChannel(channel).GetMessageAsync(message.Reference!.MessageId.Value);
+                    var quotedMessage = await guild.GetTextChannel(channel)
+                        .GetMessageAsync(message.Reference!.MessageId.Value);
                     if (quotedMessage is null)
                     {
                         return;
                     }
+
                     embeds.Add(Create.Embed(quotedMessage));
                 }
+
                 embeds.Add(Create.Embed(message));
 
                 var voteButtons = new ComponentBuilder()
-                    .WithButton(
-                        "Take me to the post 📫",
-                        style: ButtonStyle.Link,
-                        url: response.messageLink,
-                        row: 1)
+                        .WithButton(
+                            "Take me to the post 📫",
+                            style: ButtonStyle.Link,
+                            url: response.messageLink,
+                            row: 1)
                     ;
 
                 if (client.GetChannel(channelToPostMessage) is IMessageChannel chan)
                 {
-                    
                     var randomMessage = _dailyMessages[new Random().Next(_dailyMessages.Count)];
-                    
+
                     await chan.SendMessageAsync(text: randomMessage,
                         embeds: embeds.ToArray(), components: voteButtons.Build());
                 }
@@ -117,6 +120,13 @@ public class PostRandomCommentJob(
                 {
                     logger.LogError("Channel was not a message channel");
                 }
+
+                var parsedMessageId = ulong.TryParse(response.messageId, out var parsedMessageIdValue)
+                    ? parsedMessageIdValue
+                    : 0;
+                if (parsedMessageId == 0) return;
+                logger.LogInformation("saving message {msgId} to the RandomAlreadyPosted table", parsedMessageId);
+                _ = apiService.AddAlreadyPostedForGuild(parsedMessageIdValue, guild.Id);
             }
         }
         catch (Exception ex)

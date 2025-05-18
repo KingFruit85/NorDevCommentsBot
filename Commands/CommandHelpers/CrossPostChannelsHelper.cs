@@ -40,7 +40,7 @@ public class CrossPostChannelsHelper
     }
     
     public static async Task PostToChannel(List<Embed> embeds, string nominatedMessageLink,
-        IMessage nominatedMessage, ITextChannel channel, SocketUser nominator)
+        IMessage nominatedMessage, ITextChannel channelToPost, SocketUser nominator, ITextChannel channelMessageNominatedIn)
     {
             var messageLinkButton = new ComponentBuilder()
                 .WithButton(
@@ -59,8 +59,8 @@ public class CrossPostChannelsHelper
                     ButtonStyle.Danger,
                     row: 0);
 
-            await channel.SendMessageAsync(
-                Helpers.GeneralChannelGreeting(channel, nominator,
+            await channelToPost.SendMessageAsync(
+                Helpers.GeneralChannelGreeting(channelMessageNominatedIn, nominator,
                     nominatedMessage),
                 allowedMentions: AllowedMentions.All,
                 components: messageLinkButton.Build(),
