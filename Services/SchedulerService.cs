@@ -39,6 +39,16 @@ public class SchedulerService(ILogger<SchedulerService> logger, IServiceProvider
 
     private async Task SetupJob(CancellationToken cancellationToken)
     {
+        // Test jobs
+        var dailyRandomCommentJobTEST = JobBuilder.Create<PostRandomCommentJob>()
+            .WithIdentity("dailyCommentJobTEST", "discordBotGroup")
+            .Build();
+        
+        var dailyRandomCommentJobTriggerTEST = TriggerBuilder.Create()
+            .WithIdentity("dailyCommentTriggerTEST", "discordBotGroup")
+            .WithSimpleSchedule(x => x.RepeatForever().WithIntervalInMinutes(1))
+            .Build();
+        
         // Define the job
         var dailyRandomCommentJob = JobBuilder.Create<PostRandomCommentJob>()
             .WithIdentity("dailyCommentJob", "discordBotGroup")
@@ -76,6 +86,9 @@ public class SchedulerService(ILogger<SchedulerService> logger, IServiceProvider
         await _scheduler.ScheduleJob(dailyRandomCommentJob, dailyRandomCommentJobTrigger, cancellationToken);
         await _scheduler.ScheduleJob(monthlyRecapJob, monthlyRecapJobTrigger, cancellationToken);
         await _scheduler.ScheduleJob(keepDbAwakeJob, keepDbAwakeJobTrigger, cancellationToken);
+        
+        // Test jobs
+        await _scheduler.ScheduleJob(dailyRandomCommentJobTEST, dailyRandomCommentJobTriggerTEST, cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)

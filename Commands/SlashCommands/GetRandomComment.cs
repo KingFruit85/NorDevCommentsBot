@@ -16,7 +16,7 @@ public class GetRandomComment(ApiService apiService, ILogger<GetRandomComment> l
         
         try
         {
-            var response = await apiService.GetRandomComment(Context.Guild.Id);
+            var response = await apiService.GetRandomComment(Context.Guild.Id, false);
             
             if (response is null)
             {

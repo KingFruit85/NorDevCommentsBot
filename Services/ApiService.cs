@@ -125,14 +125,29 @@ public class ApiService
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<Comment?> GetRandomComment(ulong guildId, bool checkIfAlreadyPosted = false)
+    public async Task<Comment?> GetRandomComment(ulong guildId, bool checkIfAlreadyPosted)
     {
+        _logger.LogInformation("Fetching random comment for guild {guildId} with checkIfAlreadyPosted={checkIfAlreadyPosted}", guildId, checkIfAlreadyPosted);
         return await GetFromJsonAsync<Comment?>("messages/GetRandomGuildMessage?guildId=" + guildId + "&checkIfAlreadyPosted=" + checkIfAlreadyPosted);
     }
     
-    public async Task<RandomAlreadyPosted?> AddAlreadyPostedForGuild(ulong messageId, ulong guildId)
+    public async Task<RandomAlreadyPosted> AddAlreadyPostedForGuild(ulong messageId, ulong guildId)
     {
-        return await GetFromJsonAsync<RandomAlreadyPosted?>("messages/AddAlreadyPostedForGuild?messageId=" + messageId + "&guildId=" + guildId);
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("messages/AddAlreadyPostedForGuild?messageId=" + messageId + "&guildId=" + guildId, new { });
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Successfully added message to already posted list for guild {guildId}", guildId);
+                return await response.Content.ReadFromJsonAsync<RandomAlreadyPosted>();
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+        return null;
     }
 
     public async Task<List<Comment>?> GetAllComments(ulong guildId)

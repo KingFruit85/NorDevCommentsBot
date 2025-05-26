@@ -10,6 +10,7 @@ using NorDevBestOfBot.Extensions;
 using NorDevBestOfBot.Models.Options;
 using NorDevBestOfBot.Services;
 using NorDevBestOfBot.Services.ScheduledJobs;
+using NorDevBestOfBot.Services.ScheduledJobs.TestJobs;
 using Serilog;
 
 using var host = Host.CreateDefaultBuilder(args)
@@ -47,6 +48,7 @@ using var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<PostMonthlyRecapJob>();
         services.AddSingleton<KeepDbAwakeJob>();
         services.AddHostedService<SchedulerService>();
+        // services.AddSingleton<TestPostRandomCommentJob>();
 
         services
             .AddSingleton(new HttpClient())

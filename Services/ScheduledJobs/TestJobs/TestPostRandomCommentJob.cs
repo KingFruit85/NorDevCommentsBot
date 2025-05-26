@@ -1,12 +1,12 @@
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
-using Quartz;
 using NorDevBestOfBot.Commands.CommandHelpers;
+using Quartz;
 
-namespace NorDevBestOfBot.Services.ScheduledJobs;
+namespace NorDevBestOfBot.Services.ScheduledJobs.TestJobs;
 
-public class PostRandomCommentJob(
+public class TestPostRandomCommentJob(
     DiscordSocketClient client,
     ApiService apiService,
     ILogger<PostRandomCommentJob> logger)
@@ -69,7 +69,7 @@ public class PostRandomCommentJob(
                     continue;
                 }
 
-                var response = await apiService.GetRandomComment(guild.Id, true);
+                var response = await apiService.GetRandomComment(guild.Id, checkIfAlreadyPosted: true);
 
                 if (response is null) continue;
 
